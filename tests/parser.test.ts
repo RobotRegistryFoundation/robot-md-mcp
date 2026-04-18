@@ -43,4 +43,26 @@ describe("parseRobotMd", () => {
     const text = "---\n- a\n- b\n---\n\n# foo\n";
     expect(() => parseRobotMd(text)).toThrow(/mapping/i);
   });
+
+  it("throws ParseError when frontmatter is never closed", () => {
+    const text = "---\nname: bob\nno closing delimiter here\n";
+    expect(() => parseRobotMd(text)).toThrow(ParseError);
+    expect(() => parseRobotMd(text)).toThrow(/not properly closed/i);
+  });
+
+  it("throws ParseError with empty-frontmatter message when block is empty", () => {
+    const text = "---\n\n---\n\n# foo\n";
+    expect(() => parseRobotMd(text)).toThrow(/empty/i);
+  });
+
+  it("rejects leading whitespace before the opening ---", () => {
+    // Precheck must agree with the anchored regex. Previously a file with
+    // stray leading whitespace yielded 'not properly closed' — confusing.
+    const text = "   \n---\nname: bob\nmetadata:\n  robot_name: bob\n---\n\n# bob\n";
+    expect(() => parseRobotMd(text)).toThrow(/no frontmatter found/i);
+  });
+
+  it("surfaces the yaml library's message on malformed YAML", () => {
+    expect(() => parseRobotMd(fixture("bad-yaml.ROBOT.md"))).toThrow(/invalid YAML/i);
+  });
 });

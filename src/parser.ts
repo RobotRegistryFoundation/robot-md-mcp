@@ -19,7 +19,11 @@ export class ParseError extends Error {
 const FRONTMATTER_RE = /^---\s*\r?\n([\s\S]*?)\r?\n---\s*\r?\n?([\s\S]*)$/;
 
 export function parseRobotMd(text: string): ParsedRobotMd {
-  if (!text.trimStart().startsWith("---")) {
+  // No trimStart here: the regex below is anchored with ^, so tolerating
+  // leading whitespace in the precheck produced a misleading "not properly
+  // closed" error for inputs that actually had valid frontmatter but a
+  // stray leading blank line. Match the strict rule both places.
+  if (!text.startsWith("---")) {
     throw new ParseError(
       "no frontmatter found — ROBOT.md must start with a YAML frontmatter block delimited by '---'.",
     );
@@ -35,11 +39,10 @@ export function parseRobotMd(text: string): ParsedRobotMd {
   } catch (e) {
     throw new ParseError(`invalid YAML frontmatter: ${(e as Error).message}`);
   }
-  if (
-    typeof frontmatter !== "object" ||
-    frontmatter === null ||
-    Array.isArray(frontmatter)
-  ) {
+  if (frontmatter === null || frontmatter === undefined) {
+    throw new ParseError("frontmatter block is empty.");
+  }
+  if (typeof frontmatter !== "object" || Array.isArray(frontmatter)) {
     throw new ParseError("frontmatter must be a YAML mapping (object), not a list or scalar.");
   }
   return {
