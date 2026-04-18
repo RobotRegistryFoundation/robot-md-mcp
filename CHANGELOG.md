@@ -4,6 +4,22 @@ All notable changes to `robot-md-mcp` are documented here.
 
 ---
 
+## [0.1.4] - 2026-04-18
+
+### Changed
+
+- **Bundled JSON Schema refreshed to v1.1.** Picks up the `physics.solver`
+  block + per-joint DH fields (`a_mm`, `d_mm`, `servo_id`, `encoder_sign`,
+  `zero_pose_steps`) that shipped in `robot-md` v0.2.0. Manifests generated
+  by `robot-md init --preset so-arm101` now pass the MCP server's `validate`
+  tool instead of failing on unknown fields. No API change; this is a
+  data-only refresh — 28 tests still green.
+- **README role shelf.** Added the unified 7-row "Where this fits in the
+  stack" table that now lands in every ecosystem repo. Sharpened the
+  tagline to explicitly list the MCP-aware agents this works with
+  (Claude Code, Claude Desktop, Cursor, Zed, Cline, Continue.dev,
+  OpenAI Codex CLI, Gemini CLI).
+
 ## [0.1.3] - 2026-04-17
 
 ### Changed
