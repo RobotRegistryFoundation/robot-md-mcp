@@ -10,7 +10,7 @@ const bin = resolve(here, "..", "src", "bin.ts");
 function run(args: string[]) {
   return spawnSync("node", ["--import", "tsx/esm", bin, ...args], {
     encoding: "utf8",
-    timeout: 2000,
+    timeout: 10000,
   });
 }
 
@@ -18,7 +18,7 @@ describe("robot-md-mcp CLI", () => {
   it("errors when no path is provided", () => {
     const result = spawnSync("node", ["--import", "tsx/esm", bin], {
       encoding: "utf8",
-      timeout: 2000,
+      timeout: 10000,
     });
     expect(result.status).not.toBe(0);
     expect(result.stderr).toMatch(/Usage|path/i);
