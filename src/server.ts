@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import pkg from "../package.json" with { type: "json" };
 import { parseRobotMd, type ParsedRobotMd } from "./parser.js";
 import { validateParsed } from "./validate.js";
 import { renderYaml } from "./render.js";
@@ -33,7 +34,7 @@ export function createServer(manifestPath: string): ServerHandle {
 
   const server = new McpServer({
     name: "robot-md-mcp",
-    version: "0.1.0",
+    version: pkg.version,
   });
 
   const register = (

@@ -4,6 +4,16 @@ All notable changes to `robot-md-mcp` are documented here.
 
 ---
 
+## [0.1.2] - 2026-04-17
+
+### Fixed
+
+- **Internal version strings drifted from `package.json`.** `src/index.ts`'s `VERSION` constant and the `McpServer({ version })` handshake value were hardcoded to `0.1.0`, so consumers — and MCP clients like Claude Desktop — saw `0.1.0` even when running 0.1.1 from npm. Both now import the version from `package.json` at build time via `with { type: "json" }`, so they can never drift.
+
+### Changed
+
+- CI matrix Node floor pinned from `18` to `18.20` to match the declared `engines.node` floor exactly.
+
 ## [0.1.1] - 2026-04-17
 
 ### Fixed
