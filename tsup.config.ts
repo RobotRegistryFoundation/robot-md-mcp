@@ -10,6 +10,4 @@ export default defineConfig({
   outExtension: ({ format }) => ({
     js: format === "esm" ? ".mjs" : ".cjs",
   }),
-  banner: ({ format }) =>
-    format === "esm" ? { js: "#!/usr/bin/env node" } : {},
 });

@@ -2,7 +2,14 @@
   "name": "robot-md-mcp",
   "version": "0.1.0",
   "description": "MCP server that exposes a ROBOT.md file to Claude Desktop and any other MCP client",
-  "keywords": ["mcp", "robot", "robotics", "claude", "robot-md", "model-context-protocol"],
+  "keywords": [
+    "mcp",
+    "robot",
+    "robotics",
+    "claude",
+    "robot-md",
+    "model-context-protocol"
+  ],
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -12,11 +19,21 @@
   },
   "exports": {
     ".": {
-      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.mjs" },
-      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -33,6 +50,7 @@
   "devDependencies": {
     "@types/node": "^20.11.0",
     "tsup": "^8.5.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
   },
