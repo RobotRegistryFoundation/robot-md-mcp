@@ -1,0 +1,51 @@
+{
+  "name": "robot-md-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that exposes a ROBOT.md file to Claude Desktop and any other MCP client",
+  "keywords": ["mcp", "robot", "robotics", "claude", "robot-md", "model-context-protocol"],
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "robot-md-mcp": "dist/bin.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "sync-schema": "node scripts/sync-schema.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "ajv": "^8.18.0",
+    "ajv-formats": "^3.0.1",
+    "yaml": "^2.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "Apache-2.0",
+  "author": "craigm26 <craigm26@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RobotRegistryFoundation/robot-md-mcp.git"
+  },
+  "bugs": "https://github.com/RobotRegistryFoundation/robot-md-mcp/issues",
+  "homepage": "https://robotmd.dev"
+}
