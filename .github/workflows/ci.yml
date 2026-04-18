@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  schema-sync-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout canonical robot-md repo
+        uses: actions/checkout@v4
+        with:
+          repository: RobotRegistryFoundation/robot-md
+          path: robot-md-upstream
+      - name: Compare bundled schema to canonical
+        run: |
+          set -e
+          canon=$(md5sum robot-md-upstream/schema/v1/robot.schema.json | awk '{print $1}')
+          bundled=$(md5sum src/schema/robot.schema.json | awk '{print $1}')
+          echo "canonical: $canon"
+          echo "bundled:   $bundled"
+          if [ "$canon" != "$bundled" ]; then
+            echo "::error::src/schema/robot.schema.json has drifted from the canonical schema."
+            echo "Run: npm run sync-schema"
+            exit 1
+          fi
+          echo "OK — schema is in sync"
