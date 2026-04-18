@@ -76,6 +76,62 @@ describe("MCP server", () => {
     expect(String(instructions)).toContain("safety");
   });
 
+  it("lists four prompts (brief-me, check-safety, explain-capability, manifest-status)", async () => {
+    const { client } = await connected(fixturePath);
+    const list = await client.listPrompts();
+    const names = list.prompts.map((p) => p.name).sort();
+    expect(names).toEqual([
+      "brief-me",
+      "check-safety",
+      "explain-capability",
+      "manifest-status",
+    ]);
+  });
+
+  it("brief-me prompt renders with the robot name", async () => {
+    const { client } = await connected(fixturePath);
+    const result = await client.getPrompt({ name: "brief-me", arguments: {} });
+    const msg = result.messages[0];
+    expect(msg.role).toBe("user");
+    const content = msg.content as { type: string; text: string };
+    expect(content.text).toContain("test-bot");
+    expect(content.text).toContain("robot-md://test-bot/context");
+  });
+
+  it("check-safety prompt interpolates the action argument", async () => {
+    const { client } = await connected(fixturePath);
+    const result = await client.getPrompt({
+      name: "check-safety",
+      arguments: { action: "pick up the red cup" },
+    });
+    const content = result.messages[0].content as { text: string };
+    expect(content.text).toContain("pick up the red cup");
+    expect(content.text).toContain("hitl_gates");
+    expect(content.text).toContain("robot-md://test-bot/safety");
+  });
+
+  it("explain-capability prompt interpolates the capability argument", async () => {
+    const { client } = await connected(fixturePath);
+    const result = await client.getPrompt({
+      name: "explain-capability",
+      arguments: { capability: "arm.pick" },
+    });
+    const content = result.messages[0].content as { text: string };
+    expect(content.text).toContain("arm.pick");
+    expect(content.text).toContain("robot-md://test-bot/capabilities");
+  });
+
+  it("manifest-status prompt exists and references the doctor_summary tool", async () => {
+    const { client } = await connected(fixturePath);
+    const result = await client.getPrompt({
+      name: "manifest-status",
+      arguments: {},
+    });
+    const content = result.messages[0].content as { text: string };
+    expect(content.text).toContain("doctor_summary");
+    expect(content.text).toContain("test-bot");
+  });
+
   it("returns JSON frontmatter on read", async () => {
     const { client } = await connected(fixturePath);
     const result = await client.readResource({

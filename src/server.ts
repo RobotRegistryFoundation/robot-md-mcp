@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import pkg from "../package.json" with { type: "json" };
 import { parseRobotMd, type ParsedRobotMd } from "./parser.js";
 import { validateParsed } from "./validate.js";
@@ -296,6 +297,128 @@ export function createServer(manifestPath: string): ServerHandle {
         content: [{ type: "text", text: JSON.stringify(summary, null, 2) }],
       };
     },
+  );
+
+  // ── Prompts (slash commands in Claude Desktop/Code) ──────────────────────
+
+  server.registerPrompt(
+    "brief-me",
+    {
+      title: `Brief me on ${robotName}`,
+      description: `Produce a concise operator briefing on ${robotName}: identity, capabilities, safety gates, current registration status. Read the context resource; do not guess.`,
+    },
+    () => ({
+      messages: [
+        {
+          role: "user" as const,
+          content: {
+            type: "text" as const,
+            text: `Read the resource \`robot-md://${robotName}/context\` (or its narrower cousins \`/identity\`, \`/capabilities\`, \`/safety\`) and produce a short operator briefing on ${robotName}:
+
+1. **Identity** — one line (name, type, DoF, manufacturer/model/version, RRN).
+2. **Capabilities** — bullet list of declared actions.
+3. **Safety posture** — declared HITL gates, E-stop config, payload limits.
+4. **Registration** — registered on rcan.dev? If so, include the public resolver URL.
+
+Keep it to under 200 words. Do not invent capabilities or limits not in the manifest.`,
+          },
+        },
+      ],
+    }),
+  );
+
+  server.registerPrompt(
+    "check-safety",
+    {
+      title: "Is this action safe?",
+      description: `Check a proposed action against ${robotName}'s declared HITL gates and safety envelope. Use before issuing any physical motion.`,
+      argsSchema: {
+        action: z
+          .string()
+          .describe(
+            "Plain-English description of the action the operator wants to perform (e.g. 'pick up the red cup', 'rotate 180 degrees', 'move to the cabinet').",
+          ),
+      },
+    },
+    ({ action }) => ({
+      messages: [
+        {
+          role: "user" as const,
+          content: {
+            type: "text" as const,
+            text: `The operator wants ${robotName} to do: **${action}**
+
+Read \`robot-md://${robotName}/safety\` and determine:
+
+1. Does this action's scope match a declared \`hitl_gates[]\` entry with \`require_auth: true\`? If yes, name the gate and tell the operator you need explicit authorization before proceeding.
+2. Does the action stay within \`payload_kg\`, \`max_joint_velocity_dps\`, and \`workspace_bounds_m\` (if declared)?
+3. Is \`estop.software\` available? Confirm the driver command path to trigger it.
+4. If no matching gate exists AND the action is potentially harmful (unknown objects, high velocity, collision risk, workspace-boundary-approaching): **surface the gap to the operator** — say the manifest doesn't declare a gate for this scope and ask whether to add one or to authorize this specific action.
+
+Reply with one of: "✓ safe to proceed", "⚠ authorization required — <gate scope>", or "⚠ gate gap — <explanation>". Do not assume; only answer from the declared manifest.`,
+          },
+        },
+      ],
+    }),
+  );
+
+  server.registerPrompt(
+    "explain-capability",
+    {
+      title: "Explain a capability",
+      description: `Explain what one of ${robotName}'s declared capabilities does, which drivers it uses, and which safety gates apply.`,
+      argsSchema: {
+        capability: z
+          .string()
+          .describe(
+            "The capability name from the manifest's capabilities[] (e.g. 'arm.pick', 'nav.go_to', 'vision.describe').",
+          ),
+      },
+    },
+    ({ capability }) => ({
+      messages: [
+        {
+          role: "user" as const,
+          content: {
+            type: "text" as const,
+            text: `The operator asked about the \`${capability}\` capability on ${robotName}.
+
+1. Read \`robot-md://${robotName}/capabilities\`. Confirm the capability is actually declared. If not, tell the operator the capability is NOT declared and list what IS declared.
+2. If declared, read \`robot-md://${robotName}/frontmatter\` and \`/body\` to find which drivers + kinematics this capability uses and any operator-authored prose about it.
+3. Read \`robot-md://${robotName}/safety\` and identify any \`hitl_gates[]\` whose scope would apply when this capability is invoked.
+4. Produce an answer with: what the capability does, hardware path, safety gates that apply. Keep to under 150 words.`,
+          },
+        },
+      ],
+    }),
+  );
+
+  server.registerPrompt(
+    "manifest-status",
+    {
+      title: "Quick status check on the ROBOT.md",
+      description: `Run the doctor_summary tool and translate the JSON into a human-readable health summary for ${robotName}.`,
+    },
+    () => ({
+      messages: [
+        {
+          role: "user" as const,
+          content: {
+            type: "text" as const,
+            text: `Call the \`doctor_summary\` tool and translate its JSON output into a short status report for ${robotName}:
+
+- ✓ Schema valid? (if not, list the errors)
+- ✓ Registered on rcan.dev? (if so, note the RRN)
+- Drivers: per-driver port/host summary
+- HITL gates: count + scopes
+- E-stop: software/hardware/response time
+- Any obvious gaps or things the operator should know
+
+Keep it under 150 words. This is a quick-check, not a full diagnosis — for that, suggest the operator run \`robot-md doctor\` from the shell.`,
+          },
+        },
+      ],
+    }),
   );
 
   return { server, robotName, manifestPath };

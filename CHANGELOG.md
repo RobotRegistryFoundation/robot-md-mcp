@@ -4,6 +4,40 @@ All notable changes to `robot-md-mcp` are documented here.
 
 ---
 
+## [0.2.1] - 2026-04-18
+
+### Added
+
+- **Four MCP prompts** (surface as slash commands in Claude Desktop /
+  Code and any prompt-aware MCP client):
+  - `/brief-me` (zero-arg) — produces a short operator briefing on the
+    robot from the context resource.
+  - `/check-safety action=<text>` — checks a proposed action against
+    declared `hitl_gates[]`. Asks Claude to return one of
+    "✓ safe to proceed", "⚠ authorization required — <gate>", or
+    "⚠ gate gap — <explanation>". Designed to be invoked **before any
+    physical motion**.
+  - `/explain-capability capability=<name>` — explains what a declared
+    capability does, which drivers it uses, and which safety gates
+    apply. Catches the common failure mode of agents claiming a
+    capability that isn't in `capabilities[]`.
+  - `/manifest-status` (zero-arg) — wraps `doctor_summary` in a
+    human-readable report.
+- **`zod`** added as a direct dependency (used for prompt argument
+  schemas; already transitive via the MCP SDK).
+
+### Why prompts?
+
+Resources and tools get routed-to by description-matching; prompts get
+*invoked* by the operator as slash commands. `/check-safety` in
+particular converts the "read safety first" habit from "I hope Claude
+remembers" into a one-keystroke enforcement path any operator can
+trigger before asking for a motion.
+
+35/35 tests pass.
+
+---
+
 ## [0.2.0] - 2026-04-18
 
 Agent-affordances release. Goal: any MCP-aware agent (Claude Code,
