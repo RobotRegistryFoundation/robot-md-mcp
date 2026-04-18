@@ -4,6 +4,48 @@ All notable changes to `robot-md-mcp` are documented here.
 
 ---
 
+## [0.2.0] - 2026-04-18
+
+Agent-affordances release. Goal: any MCP-aware agent (Claude Code,
+Claude Desktop, Cursor, Zed, Gemini CLI, Codex, ChatGPT Desktop) can
+route to this server by description-match alone — without the operator
+explicitly naming the tool.
+
+### Added
+
+- **Server-level `instructions` field** (MCP initialize response).
+  Tells clients what this server is for, when to route to it, and an
+  operator-intent → resource/tool routing table. Matches the MCP spec
+  field designed exactly for this.
+- **New resource `robot-md://<name>/identity`** — compact one-line
+  summary (name, type, DoF, manufacturer/model/version, RRN, resolver
+  URL). Read this FIRST at session start; it's the cheapest orient.
+- **New resource `robot-md://<name>/context`** — pre-rendered Markdown
+  combining identity, capabilities, HITL gates, E-stop config, and the
+  prose body. Designed for system-prompt injection or a "brief me"
+  first turn.
+- **New tool `doctor_summary`** — read-only, manifest-only quick-check.
+  Returns JSON with schema status, driver summary, HITL gates, E-stop,
+  registration status. Cheaper + safer than the full `robot-md doctor`
+  CLI (which also probes network + drivers).
+
+### Changed
+
+- **All resource + tool descriptions rewritten** with operator-intent
+  phrasing. Each description now starts with what the resource IS,
+  then lists operator phrases that should trigger a read/call (e.g.
+  "what can this robot do", "is it safe to X", "did I break the
+  manifest"). This makes description-match routing reliable.
+- `frontmatter` JSON output is now pretty-printed (2-space indent) so
+  agents don't have to re-parse for legibility.
+
+### Test coverage
+
+30/30 tests pass. New coverage for `identity`, `context`,
+`doctor_summary`, and the `instructions` field.
+
+---
+
 ## [0.1.4] - 2026-04-18
 
 ### Changed

@@ -19,16 +19,61 @@ async function connected(manifestPath: string) {
 }
 
 describe("MCP server", () => {
-  it("lists four resources for a valid manifest", async () => {
+  it("lists six resources for a valid manifest", async () => {
     const { client } = await connected(fixturePath);
     const list = await client.listResources();
     const uris = list.resources.map((r) => r.uri).sort();
     expect(uris).toEqual([
       "robot-md://test-bot/body",
       "robot-md://test-bot/capabilities",
+      "robot-md://test-bot/context",
       "robot-md://test-bot/frontmatter",
+      "robot-md://test-bot/identity",
       "robot-md://test-bot/safety",
     ]);
+  });
+
+  it("identity resource returns compact one-line summary", async () => {
+    const { client } = await connected(fixturePath);
+    const result = await client.readResource({
+      uri: "robot-md://test-bot/identity",
+    });
+    const c0 = result.contents[0] as { mimeType?: string; text?: string };
+    expect(c0.mimeType).toBe("text/plain");
+    expect(String(c0.text)).toContain("test-bot");
+  });
+
+  it("context resource returns Claude-ready markdown", async () => {
+    const { client } = await connected(fixturePath);
+    const result = await client.readResource({
+      uri: "robot-md://test-bot/context",
+    });
+    const c0 = result.contents[0] as { mimeType?: string; text?: string };
+    expect(c0.mimeType).toBe("text/markdown");
+    const text = String(c0.text);
+    expect(text).toContain("Robot context");
+    expect(text).toContain("Capabilities");
+    expect(text).toContain("Safety gates");
+  });
+
+  it("doctor_summary tool returns schema_ok + driver summary", async () => {
+    const { client } = await connected(fixturePath);
+    const result = await client.callTool({ name: "doctor_summary", arguments: {} });
+    const content = result.content as Array<{ type: string; text?: string }>;
+    const text = content.find((c) => c.type === "text")?.text;
+    const parsed = JSON.parse(String(text));
+    expect(parsed.schema_ok).toBe(true);
+    expect(parsed.robot_name).toBe("test-bot");
+    expect(Array.isArray(parsed.drivers)).toBe(true);
+    expect(Array.isArray(parsed.hitl_gates)).toBe(true);
+  });
+
+  it("server advertises instructions at initialization", async () => {
+    const { client } = await connected(fixturePath);
+    const instructions = client.getInstructions();
+    expect(instructions).toBeDefined();
+    expect(String(instructions)).toContain("ROBOT.md");
+    expect(String(instructions)).toContain("safety");
   });
 
   it("returns JSON frontmatter on read", async () => {
