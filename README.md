@@ -1,10 +1,26 @@
 # robot-md-mcp
 
-> MCP server that exposes a [`ROBOT.md`](https://robotmd.dev) file to Claude Desktop and any other MCP-speaking client.
+> **The one-command bridge from a `ROBOT.md` file to any MCP-aware agent.**
+> Claude Code, Claude Desktop, Cursor, Zed, Cline, Continue.dev, OpenAI Codex CLI, Google Gemini CLI — any MCP client speaking stdio transport reads your robot's manifest as structured resources. Zero config files.
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-18.20%2B-green)](https://nodejs.org)
 [![CI](https://github.com/RobotRegistryFoundation/robot-md-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/RobotRegistryFoundation/robot-md-mcp/actions)
+[![npm](https://img.shields.io/npm/v/robot-md-mcp.svg)](https://www.npmjs.com/package/robot-md-mcp)
+
+## Where this fits in the stack
+
+This repo is the **agent bridge** — an MCP server that speaks the open [Model Context Protocol](https://modelcontextprotocol.io) and serves your `ROBOT.md` to any MCP-aware planner. Everything else is independent; adopt one, or all seven.
+
+| Layer | Piece | What it is |
+|---|---|---|
+| **Declaration** | [ROBOT.md](https://github.com/RobotRegistryFoundation/robot-md) | The file a robot ships at its root. YAML frontmatter + markdown prose. Declares identity, capabilities, safety gates. Spec + Python CLI (`init`, `validate`, `calibrate`, `register`). |
+| **Agent bridge** ← *this* | [robot-md-mcp](https://github.com/RobotRegistryFoundation/robot-md-mcp) | **MCP server** that exposes a `ROBOT.md` as 4 MCP resources (`frontmatter`, `capabilities`, `safety`, `body`) + 2 tools (`validate`, `render`). One `claude mcp add` away. |
+| **Wire protocol** | [RCAN](https://rcan.dev/spec/) | How robots, gateways, and planners talk. Signed envelopes, LoA enforcement, PQC crypto. Think HTTP for robots. |
+| **Python SDK** | [rcan-py](https://github.com/continuonai/rcan-py) | `pip install rcan` — `RCANMessage`, `RobotURI`, `ConfidenceGate`, `HiTLGate`, `AuditChain`. |
+| **TypeScript SDK** | [rcan-ts](https://github.com/continuonai/rcan-ts) | `npm install rcan-ts` — same API surface for Node + browser. |
+| **Registry** | [Robot Registry Foundation](https://robotregistryfoundation.org) | Permanent RRN identities. Public resolver at `/r/<rrn>`. Like ICANN for robots. |
+| **Reference runtime** | [OpenCastor](https://github.com/craigm26/OpenCastor) | Open-source robot runtime — connects LLM brains to hardware bodies. One implementation of RCAN. |
 
 ## What it does
 
