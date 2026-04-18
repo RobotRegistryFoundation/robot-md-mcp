@@ -77,4 +77,22 @@ No heading here.
     expect(result.ok).toBe(false);
     expect(result.errors.some((e) => e.toLowerCase().includes("h1"))).toBe(true);
   });
+
+  it("flags a missing Identity body section (parity with Python validator)", () => {
+    const result = validateParsed(
+      parseRobotMd(fixture("missing-identity-section.ROBOT.md")),
+    );
+    expect(result.ok).toBe(false);
+    expect(result.errors.some((e) => e.includes("## Identity"))).toBe(true);
+  });
+
+  it("does NOT crash when frontmatter is null (defensive)", () => {
+    const result = validateParsed({
+      frontmatter: null as unknown as Record<string, unknown>,
+      body: "",
+      rawText: "",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.summary).toBe("? (?, 0 DoF, 0 capabilities)");
+  });
 });

@@ -30,25 +30,39 @@ function formatAjvError(err: ErrorObject): string {
 }
 
 function h1(body: string): string | null {
-  const m = body.match(/^\s*#\s+(.+?)\s*$/m);
+  const m = body.match(/^\s*#\s+(.+?)\s*#*\s*$/m);
+  // Strip ATX-style trailing hashes (e.g. "# Bob #" → "Bob") to match
+  // CommonMark's decoration convention.
   return m ? m[1].trim() : null;
 }
+
+// Mirror the Python validator's required body sections. Kept in sync with
+// /home/craigm26/robot-md/cli/src/robot_md/validate.py : REQUIRED_BODY_SECTIONS.
+const REQUIRED_BODY_SECTIONS = ["## Identity", "## Safety Gates"];
 
 export function validateParsed(parsed: ParsedRobotMd): ValidateResult {
   const errors: string[] = [];
 
-  const schemaValid = validateFn(parsed.frontmatter);
+  // Defensive: validator may be called with a hand-built ParsedRobotMd where
+  // frontmatter is null / non-object. Parser rejects this in practice, but
+  // guard the direct-call path so MCP tool invocations never crash.
+  const fmRaw: unknown = parsed.frontmatter;
+  const fm =
+    fmRaw !== null && typeof fmRaw === "object" && !Array.isArray(fmRaw)
+      ? (fmRaw as {
+          metadata?: { robot_name?: string };
+          physics?: { type?: string; dof?: number };
+          capabilities?: unknown[];
+        })
+      : {};
+
+  const schemaValid = validateFn(fmRaw);
   if (!schemaValid && validateFn.errors) {
     for (const err of validateFn.errors) {
       errors.push(formatAjvError(err));
     }
   }
 
-  const fm = parsed.frontmatter as {
-    metadata?: { robot_name?: string };
-    physics?: { type?: string; dof?: number };
-    capabilities?: unknown[];
-  };
   const robotName = fm.metadata?.robot_name;
   if (typeof robotName === "string" && robotName.trim() !== "") {
     const found = h1(parsed.body);
@@ -57,6 +71,21 @@ export function validateParsed(parsed: ParsedRobotMd): ValidateResult {
     } else if (found !== robotName.trim()) {
       errors.push(
         `body: H1 "${found}" does not match metadata.robot_name "${robotName}".`,
+      );
+    }
+
+    for (const section of REQUIRED_BODY_SECTIONS) {
+      if (!parsed.body.includes(section)) {
+        errors.push(`body: missing required section '${section}'.`);
+      }
+    }
+    const whatPattern = new RegExp(
+      `^## What ${robotName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} Can Do\\s*$`,
+      "im",
+    );
+    if (!whatPattern.test(parsed.body)) {
+      errors.push(
+        `body: missing required section '## What ${robotName} Can Do' (case-insensitive).`,
       );
     }
   }
