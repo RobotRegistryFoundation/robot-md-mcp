@@ -76,6 +76,9 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish_npm == 'true'
     needs: build-and-test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # required so `npm publish --provenance` can mint an OIDC attestation
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
