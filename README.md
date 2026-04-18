@@ -27,17 +27,33 @@ The server re-reads the file on every call. No cache, no watcher, no runtime con
 - No robot dispatch. `invoke_skill` / `query_status` arrive after the v0.2 signing decisions in §13 are finalized.
 - No multi-manifest / fleet mode.
 
-## Install
+## Claude Code (CLI) — one command
+
+The fastest way. One line, no config files:
 
 ```bash
-# From npm (once NPM_TOKEN is configured on the release workflow)
-npx robot-md-mcp /path/to/ROBOT.md
-
-# From GitHub release tarball (during the npm-blocked window)
-npm i github:RobotRegistryFoundation/robot-md-mcp#v0.1.0
+claude mcp add robot-md -- npx -y robot-md-mcp /absolute/path/to/ROBOT.md
 ```
 
-Node 18.20+ required.
+That's it. Open Claude Code — it now reads your robot's frontmatter, capabilities, safety block, and prose body as MCP resources, and can invoke the `validate` and `render` tools on request. **No harness config, no provider setup, no YAML wrangling.**
+
+To confirm it's wired up:
+
+```bash
+claude mcp list | grep robot-md
+```
+
+To remove: `claude mcp remove robot-md`.
+
+## Install (standalone)
+
+If you want to run the server yourself:
+
+```bash
+npx robot-md-mcp /path/to/ROBOT.md
+```
+
+Node 18.20+ required. The `claude mcp add` flow above uses `npx` under the hood, so no global install needed for the Claude Code path.
 
 ## Claude Desktop config
 
@@ -58,6 +74,29 @@ Add this to your `claude_desktop_config.json`:
 ```
 
 Restart Claude Desktop. Open a new chat — Claude now has the robot's frontmatter, capabilities, safety block, and prose body on tap.
+
+## Any MCP-aware agent harness
+
+ROBOT.md is a file. `robot-md-mcp` is an MCP server. MCP is an [open standard](https://modelcontextprotocol.io). Any agent tool that speaks MCP can ingest ROBOT.md through this server — not just Claude.
+
+The underlying command to register is always the same:
+
+```
+npx -y robot-md-mcp /absolute/path/to/ROBOT.md
+```
+
+Stdio transport, no auth. How you wire it depends on the harness:
+
+| Harness | How to add |
+|---|---|
+| **Claude Code** (CLI) | `claude mcp add robot-md -- npx -y robot-md-mcp /path/to/ROBOT.md` |
+| **Claude Desktop** | JSON snippet in `claude_desktop_config.json` (see above) |
+| **OpenAI** (Codex CLI, ChatGPT Desktop) | Add to the tool's MCP-server config — command `npx`, args `["-y","robot-md-mcp","/path/to/ROBOT.md"]` |
+| **Google Gemini CLI** | Add to `~/.gemini/settings.json` under `mcpServers` with the command above |
+| **Cursor / Zed / Cline / Continue.dev / VS Code MCP extensions** | Add via the tool's MCP settings with the same command |
+| **Anything else speaking MCP stdio** | Register the `npx` command; that's it |
+
+Create and place one ROBOT.md. Any agent — any provider — reads the same file. That's the whole point.
 
 ## Tier-0 adoption loop
 
