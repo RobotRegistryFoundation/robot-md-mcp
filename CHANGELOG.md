@@ -4,6 +4,17 @@ All notable changes to `robot-md-mcp` are documented here.
 
 ---
 
+## [0.1.3] - 2026-04-17
+
+### Changed
+
+- **Migrated to the non-deprecated MCP SDK APIs.** `server.resource()` and `server.tool()` are `@deprecated` in `@modelcontextprotocol/sdk` 1.29.x. Switched to `registerResource(name, uri, {mimeType, title, description}, cb)` and `registerTool(name, {title, description, inputSchema}, cb)`. MCP clients that render resource pickers (Claude Desktop, Zed, Cline) now show a friendly title + description for each of the four resources (`frontmatter`, `capabilities`, `safety`, `body`) and both tools (`validate`, `render`). No behavior changes — URIs, MIME types, and tool payloads are byte-identical.
+
+### Added
+
+- **`sync-schema --check` mode.** `npm run sync-schema -- --check` exits 2 on drift (without overwriting) so contributors can verify the bundled copy matches the canonical `robot-md` schema locally before pushing. Equivalent check already runs in CI.
+- **README API surface expanded** to list all 9 public exports (added `ParseError`, `VERSION`, and the three type exports).
+
 ## [0.1.2] - 2026-04-17
 
 ### Fixed

@@ -75,14 +75,21 @@ robot-md autodetect --write ./ROBOT.md
 
 ```ts
 import {
+  // Core
   parseRobotMd,
+  ParseError,
   validateParsed,
   renderYaml,
   createServer,
+  VERSION,
+  // Types
+  type ParsedRobotMd,
+  type ValidateResult,
+  type ServerHandle,
 } from "robot-md-mcp";
 ```
 
-All four are importable for programmatic use (e.g. building a custom MCP server on top).
+All are importable for programmatic use — e.g. building a custom MCP server on top, or running the parser/validator as part of a larger TypeScript tool.
 
 ## Development
 
