@@ -4,6 +4,20 @@ All notable changes to `robot-md-mcp` are documented here.
 
 ---
 
+## [0.2.2] - 2026-04-23
+
+### BREAKING — RCAN 3.0+ required
+- Bundled `src/schema/robot.schema.json` resynced from canonical upstream
+  (`robot-md/schema/v1/robot.schema.json`). `rcan_version` now enforced
+  as pattern `^3\.[0-9]+(\.[0-9]+)?$` with description "RCAN protocol
+  version. Must be 3.0 or higher (ecosystem policy: RCAN 3.0+ only
+  going forward; 2.x no longer accepted)." ROBOT.md files declaring
+  `rcan_version: "2.x"` will fail validation.
+
+### Added
+- `tests/schema-rcan-version.test.ts` — 7 regression tests locking the
+  3.0+ acceptance gate.
+
 ## [0.2.1] - 2026-04-18
 
 ### Added
