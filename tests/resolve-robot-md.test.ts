@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
+import { mkdtempSync, realpathSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resolveRobotMdPath } from "../src/resolve-robot-md.js";
@@ -9,7 +9,7 @@ describe("resolveRobotMdPath", () => {
   let originalCwd: string;
 
   beforeEach(() => {
-    sandbox = mkdtempSync(join(tmpdir(), "rmmcp-resolve-"));
+    sandbox = realpathSync(mkdtempSync(join(tmpdir(), "rmmcp-resolve-")));
     originalCwd = process.cwd();
   });
 
@@ -48,7 +48,7 @@ describe("resolveRobotMdPath", () => {
   });
 
   it("throws a clear error when no ROBOT.md can be found", () => {
-    const bare = mkdtempSync(join(tmpdir(), "rmmcp-bare-"));
+    const bare = realpathSync(mkdtempSync(join(tmpdir(), "rmmcp-bare-")));
     try {
       process.chdir(bare);
       expect(() => resolveRobotMdPath()).toThrow(/No ROBOT\.md found/);
