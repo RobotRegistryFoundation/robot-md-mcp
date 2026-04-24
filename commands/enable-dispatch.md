@@ -8,7 +8,7 @@ Run `robot-md-dispatcher init --yes --no-token-stdout` in the workspace root.
 Preconditions:
 
 1. `ROBOT.md` must exist at the workspace root. If it's missing, stop and tell the user to run `robot-md init` or `castor init` first.
-2. `robot-md-dispatcher` must be installed. If `which robot-md-dispatcher` fails, stop and tell the user to run `pip install robot-md-dispatcher`.
+2. `robot-md-dispatcher` must be installed AND at version `0.2.0` or later. Run `robot-md-dispatcher init --help`; if the command fails or argparse emits "invalid choice: 'init'", stop and tell the user to run `pip install -U 'robot-md-dispatcher>=0.2.0'`.
 
 After the command completes successfully:
 
