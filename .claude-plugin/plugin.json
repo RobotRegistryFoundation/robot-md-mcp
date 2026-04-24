@@ -1,0 +1,9 @@
+{
+  "name": "robot-md",
+  "description": "Bundles the using-robot-md skill and auto-registers the robot-md-mcp server. Reads a project's ROBOT.md and exposes frontmatter, capabilities, safety, and body as MCP resources, plus validate and render tools. Zero-config: ROBOT.md at the workspace root is picked up automatically.",
+  "author": {
+    "name": "Robot Registry Foundation",
+    "email": "craigm26@gmail.com"
+  },
+  "homepage": "https://robotmd.dev"
+}
