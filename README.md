@@ -43,6 +43,19 @@ The server re-reads the file on every call. No cache, no watcher, no runtime con
 - No robot dispatch. `invoke_skill` / `query_status` arrive after the v0.2 signing decisions in §13 are finalized.
 - No multi-manifest / fleet mode.
 
+## Claude Code plugin — the easiest path
+
+```bash
+claude plugin marketplace add RobotRegistryFoundation/claude-code-plugins
+/plugin install robot-md
+```
+
+That's it. The plugin ships the `using-robot-md` skill and auto-registers this MCP server. Open any project with a `ROBOT.md` at the workspace root — the skill loads and the MCP resources are live.
+
+Prefer the plain `claude mcp add` flow below if you need to pin a specific path, run against multiple `ROBOT.md` files, or install without a marketplace.
+
+---
+
 ## Claude Code (CLI) — one command
 
 The fastest way. One line, no config files:
