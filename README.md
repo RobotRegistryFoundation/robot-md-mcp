@@ -37,6 +37,65 @@ Reads a local `ROBOT.md` and exposes it to an MCP client as:
 
 The server re-reads the file on every call. No cache, no watcher, no runtime config.
 
+## Who uses this — three examples
+
+Real operator workflows the plugin was designed for. Each example is a single Claude Code session after `/plugin install robot-md`.
+
+### Example 1 — First-time hobbyist with an SO‑ARM101
+
+A maker just assembled their first robot arm and wants Claude to drive it safely.
+
+```
+$ pip install robot-md && robot-md init my-arm --preset so-arm101 \
+    --manufacturer "Home Lab" --contact-email me@example.com
+$ cd my-arm && claude
+```
+
+Inside Claude Code:
+
+> **Operator:** what can this robot do?
+>
+> **Claude:** *(reads `robot-md://my-arm/capabilities` via MCP)* my-arm is a 6‑DOF SO‑ARM101 with five capabilities: `arm.pick`, `arm.place`, `arm.reach`, `vision.describe`, `status.report`. Max payload 0.5 kg. Software E‑stop at 100 ms.
+>
+> **Operator:** pick up the red block and put it in the bowl
+>
+> **Claude:** *(reads `/safety` first)* The `arm.pick` capability has an HITL gate requiring explicit authorization for destructive scopes. The bowl-placement isn't destructive — I can proceed without extra auth. Running now.
+
+**What the plugin does here:** the `using-robot-md` skill blocks answering from general robotics priors (the operator's declared 0.5 kg payload overrides Claude's training-data assumptions), enforces a safety-read before any motion, and routes capability questions to MCP resources instead of guessing.
+
+### Example 2 — Safety review before a sensitive action
+
+A clinical-lab operator is about to let Claude manipulate a glass vial. They want an explicit safety check, not a generic answer.
+
+> **Operator:** /check-safety action="pick up the glass vial near the centrifuge"
+>
+> **Claude:** *(invokes the `check-safety` MCP prompt, which cross-references declared `hitl_gates[]`)* ⚠ **Authorization required.** Your manifest declares a gate named `fragile-objects` with `require_auth: true` for scopes matching "glass" and "vial". The gate requires your explicit "yes, authorize" before any motion. I won't proceed until you confirm.
+>
+> **Operator:** yes, authorize the pick — the vial is capped and empty
+>
+> **Claude:** Acknowledged. Executing `arm.pick` with the authorized scope.
+
+**What the plugin does here:** the `/check-safety` slash command (an MCP prompt, not a hallucinated protocol) gives operators a deterministic gate check. The skill's rules ban Claude from silently proceeding past an undeclared scope; it either finds a matching gate or surfaces the gap.
+
+### Example 3 — Team sharing a fleet-robot manifest
+
+A research team has a shared repo for their TurtleBot-4 logistics robot. They want every engineer who clones the repo to get the same robot context in Claude Code without extra setup.
+
+```
+# From the team lead's laptop, inside the repo:
+$ /plugin marketplace add RobotRegistryFoundation/claude-code-plugins --scope project
+$ /plugin install robot-md --scope project
+$ git add .claude/settings.json && git commit -m "chore: pin robot-md plugin to repo"
+```
+
+Now anyone who clones the repo and runs `claude` inside it gets the plugin auto-loaded (`/plugin`'s project scope reads from the committed `.claude/settings.json`). The `ROBOT.md` at the repo root is picked up by the MCP server's cwd-walk — no absolute paths, no environment variables, no onboarding doc.
+
+> **New teammate, first session:** what am I looking at?
+>
+> **Claude:** *(reads `robot-md://fleet-tb4/context` via MCP, skill fires)* This is `fleet-tb4` — a TurtleBot-4 warehouse logistics robot registered at RRN‑000000000412 (public record: robotregistryfoundation.org/r/RRN-000000000412). It has six capabilities, two active HITL gates (shelf-height > 2 m, and any motion near the charging dock), and a 4‑hour battery runtime. What do you want to work on?
+
+**What the plugin does here:** project-scoped install means the robot context travels with the repo. New teammates get identical agent behavior on day one. The registered RRN gives every surface (Code, Desktop, Mobile) the same public identity to anchor against.
+
 ## Not in v0.1 — deferred to v0.2
 
 - No signature verification. `ROBOT.md` v0.2 will add signed manifests (`.sig`) and a key-binding-at-RRN-mint flow; see [`spec/v0.2-design.md`](https://robotmd.dev/spec/v0.2-design.md).
