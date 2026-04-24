@@ -1,20 +1,19 @@
 #!/usr/bin/env node
-import { existsSync } from "node:fs";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createServer } from "./server.js";
+import { resolveRobotMdPath } from "./resolve-robot-md.js";
 
 async function main() {
-  const path = process.argv[2];
-  if (!path) {
+  let path: string;
+  try {
+    path = resolveRobotMdPath(process.argv[2]);
+  } catch (err) {
     console.error(
-      "Usage: robot-md-mcp <path-to-ROBOT.md>\n\n" +
-        "Add this to Claude Desktop's MCP config (claude_desktop_config.json):\n" +
-        '  { "mcpServers": { "robot-md": { "command": "npx", "args": ["-y", "robot-md-mcp", "/path/to/ROBOT.md"] } } }\n',
+      `robot-md-mcp: ${(err as Error).message}\n\n` +
+        "Usage:\n" +
+        "  robot-md-mcp                 # auto-discover ROBOT.md by walking up from cwd\n" +
+        "  robot-md-mcp /path/ROBOT.md  # explicit path\n",
     );
-    process.exit(2);
-  }
-  if (!existsSync(path)) {
-    console.error(`robot-md-mcp: cannot read ${path} (file does not exist).`);
     process.exit(1);
   }
 
