@@ -1,6 +1,6 @@
 {
   "robot-md": {
     "command": "npx",
-    "args": ["-y", "robot-md-mcp@^0.3", "${CLAUDE_PROJECT_DIR}/ROBOT.md"]
+    "args": ["-y", "robot-md-mcp@^0.3"]
   }
 }
