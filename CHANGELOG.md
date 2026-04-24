@@ -4,6 +4,33 @@ All notable changes to `robot-md-mcp` are documented here.
 
 ---
 
+## [0.3.0] - 2026-04-24
+
+### Added
+- `resolveRobotMdPath` — cwd-walk auto-discovery. Running `robot-md-mcp`
+  with no path argument now walks up from `process.cwd()` looking for a
+  `ROBOT.md`. An argument that still contains an unexpanded `${...}`
+  template (from MCP clients that don't substitute plugin env vars) is
+  treated as missing and also falls back to the walk. Explicit paths
+  that exist continue to win; explicit paths that don't exist still
+  error (no silent fallback) so typos surface immediately.
+- `tests/resolve-robot-md.test.ts` — 6 tests pinning the resolution
+  ladder.
+
+### Why
+Enables the new `robot-md` Claude Code plugin (separate release) to ship
+a zero-configuration install: the plugin's `.mcp.json` passes
+`${CLAUDE_PROJECT_DIR}/ROBOT.md` and the server handles both the
+expanded and unexpanded cases. Benefits every MCP client, not just
+Claude Code — Cursor/Zed/Continue/Desktop all get auto-discovery for
+free.
+
+### Compatibility
+Fully backward compatible. Existing explicit-path invocations
+(`robot-md-mcp /path/to/ROBOT.md`) behave identically.
+
+---
+
 ## [0.2.2] - 2026-04-23
 
 ### BREAKING — RCAN 3.0+ required
