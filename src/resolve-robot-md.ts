@@ -18,7 +18,7 @@ export function resolveRobotMdPath(argPath?: string): string {
   if (argPath && !UNEXPANDED_TEMPLATE.test(argPath)) {
     const abs = isAbsolute(argPath) ? argPath : resolve(process.cwd(), argPath);
     if (!existsSync(abs)) {
-      throw new Error(`robot-md-mcp: cannot read ${abs} (file does not exist).`);
+      throw new Error(`cannot read ${abs} (file does not exist).`);
     }
     return abs;
   }
