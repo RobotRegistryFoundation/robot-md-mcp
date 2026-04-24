@@ -45,14 +45,47 @@ The server re-reads the file on every call. No cache, no watcher, no runtime con
 
 ## Claude Code plugin — the easiest path
 
-```bash
-claude plugin marketplace add RobotRegistryFoundation/claude-code-plugins
+The plugin bundles the `using-robot-md` skill **and** auto-registers this MCP server. Two phases: install the plugin once, then set up each robot project.
+
+### Phase 1 — Install the plugin (one-time)
+
+Inside Claude Code:
+
+```
+/plugin marketplace add RobotRegistryFoundation/claude-code-plugins
 /plugin install robot-md
+/reload-plugins
 ```
 
-That's it. The plugin ships the `using-robot-md` skill and auto-registers this MCP server. Open any project with a `ROBOT.md` at the workspace root — the skill loads and the MCP resources are live.
+**Scope** — `/plugin install` defaults to `--scope user` (the recommended choice for most people). Other scopes:
 
-Prefer the plain `claude mcp add` flow below if you need to pin a specific path, run against multiple `ROBOT.md` files, or install without a marketplace.
+| Scope | When to use | Command |
+|---|---|---|
+| **`user`** (default, recommended) | Your own machine, every project you open. Install once and forget. | `/plugin install robot-md` |
+| `project` | Your team's repo — pin the plugin in `.claude/settings.json` so everyone who opens the repo gets it automatically. Commit the settings file. | `/plugin install robot-md --scope project` |
+| `local` | Your personal override inside a project (writes to `.claude/settings.local.json`, not committed). Rare. | `/plugin install robot-md --scope local` |
+
+The same `--scope` flag works on `/plugin marketplace add`. Match the scopes: if the plugin is `project`-scoped, the marketplace should be too, otherwise teammates won't find it.
+
+### Phase 2 — Set up a robot project (per project)
+
+```bash
+# If you don't have one yet, create a ROBOT.md:
+pip install robot-md
+robot-md init my-robot --preset so-arm101 --manufacturer Acme --contact-email you@example.com
+
+# Then launch Claude Code from the project root:
+cd path/to/my-robot
+claude
+```
+
+Inside the session, run `/mcp` — you should see `robot-md` connected. Ask "what can this robot do?" and the `using-robot-md` skill fires, reading capabilities from the MCP server.
+
+**How the MCP server finds your ROBOT.md:** it walks up from the directory you launched Claude Code in, picks the first `ROBOT.md` it finds, and serves that. Launch from the project root and it just works — no config, no env vars.
+
+**Registering a real robot** (optional): once validated, `robot-md register ROBOT.md --manufacturer <...> --contact-email <...>` mints an RRN at [Robot Registry Foundation](https://robotregistryfoundation.org) and pins `metadata.rrn` in your file.
+
+Prefer the plain `claude mcp add` flow below if you need to pin a specific absolute path, run against multiple `ROBOT.md` files from one session, or install without a marketplace.
 
 ---
 
