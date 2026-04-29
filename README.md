@@ -97,6 +97,21 @@ Now anyone who clones the repo and runs `claude` inside it gets the plugin auto-
 
 **What the plugin does here:** project-scoped install means the robot context travels with the repo. New teammates get identical agent behavior on day one. The registered RRN gives every surface (Code, Desktop, Mobile) the same public identity to anchor against.
 
+## REST + OpenAPI bridge — `robot-md-http` (v0.1, scaffolding)
+
+For agents that don't speak MCP (ChatGPT Custom GPT Actions, OpenAI Agents SDK, n8n, Zapier, plain curl) the same package now ships a Hono-based HTTP bridge that mirrors the MCP tool surface. Localhost-only, `npx`-launched per project, same posture as the MCP server.
+
+```bash
+npx -y robot-md-http /path/to/ROBOT.md
+# robot-md-http: serving bob on http://localhost:8787
+#   OpenAPI 3.1: http://localhost:8787/openapi.json
+#   Health:      http://localhost:8787/health
+```
+
+ChatGPT Custom GPT Actions can import `http://localhost:8787/openapi.json` directly. Endpoints mirror the MCP resources (`frontmatter`, `capabilities`, `safety`, `body`, `identity`, `context`) plus `POST /validate` and `POST /render` tools.
+
+v0.1 is a scaffold — see [issue #3 in robot-md](https://github.com/RobotRegistryFoundation/robot-md/issues/3) for the full v0.1 spec and the v0.2 hosted-multi-tenant roadmap (RCAN 3.0 envelopes, rate limiting, GPT Store entry).
+
 ## Not in v0.1 — deferred to v0.2
 
 - No signature verification. `ROBOT.md` v0.2 will add signed manifests (`.sig`) and a key-binding-at-RRN-mint flow; see [`spec/v0.2-design.md`](https://robotmd.dev/spec/v0.2-design.md).
