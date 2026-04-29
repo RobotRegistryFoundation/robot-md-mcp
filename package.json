@@ -15,7 +15,8 @@
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "bin": {
-    "robot-md-mcp": "dist/bin.mjs"
+    "robot-md-mcp": "dist/bin.mjs",
+    "robot-md-http": "dist/bin-http.mjs"
   },
   "exports": {
     ".": {
@@ -43,9 +44,11 @@
     "sync-schema": "node scripts/sync-schema.mjs"
   },
   "dependencies": {
+    "@hono/node-server": "^2.0.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
+    "hono": "^4.12.15",
     "yaml": "^2.8.3",
     "zod": "^4.3.6"
   },
