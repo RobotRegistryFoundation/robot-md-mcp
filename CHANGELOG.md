@@ -4,6 +4,13 @@ All notable changes to `robot-md-mcp` are documented here.
 
 ---
 
+## [0.5.0] - 2026-05-11
+
+### Added
+- Mirror pick-place trial protocol section in `using-robot-md` SKILL.md (canonical update synced to robot-md 1.10.0).
+
+---
+
 ## [0.3.0] - 2026-04-24
 
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "robot-md-mcp",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "MCP server that exposes a ROBOT.md file to Claude Desktop and any other MCP client",
   "keywords": [
     "mcp",
