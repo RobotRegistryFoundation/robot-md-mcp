@@ -7,7 +7,7 @@
  */
 
 import { serve } from "@hono/node-server";
-import { resolveRobotMdPath } from "./resolve-robot-md.js";
+import { resolveManifest } from "./manifest-resolver.js";
 import { createHttpApp } from "./http.js";
 
 async function main(): Promise<void> {
@@ -15,7 +15,16 @@ async function main(): Promise<void> {
   const argPath = args.find((a) => !a.startsWith("-"));
   const port = Number(process.env.PORT ?? 8787);
 
-  const manifestPath = resolveRobotMdPath(argPath);
+  const resolution = resolveManifest({
+    cliPath: argPath,
+    cwd: process.cwd(),
+  });
+  if (!resolution.path) {
+    process.stderr.write(`robot-md-http: ${resolution.message}\n`);
+    process.exit(2);
+  }
+  process.stderr.write(`robot-md-http: ${resolution.message}\n`);
+  const manifestPath = resolution.path;
   const { app, robotName } = createHttpApp(manifestPath);
 
   serve({ fetch: app.fetch, port }, (info) => {

@@ -1,21 +1,24 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createServer } from "./server.js";
-import { resolveRobotMdPath } from "./resolve-robot-md.js";
+import { resolveManifest } from "./manifest-resolver.js";
 
 async function main() {
-  let path: string;
-  try {
-    path = resolveRobotMdPath(process.argv[2]);
-  } catch (err) {
+  const resolution = resolveManifest({
+    cliPath: process.argv[2],
+    cwd: process.cwd(),
+  });
+  if (!resolution.path) {
     console.error(
-      `robot-md-mcp: ${(err as Error).message}\n\n` +
+      `robot-md-mcp: ${resolution.message}\n\n` +
         "Usage:\n" +
-        "  robot-md-mcp                 # auto-discover ROBOT.md by walking up from cwd\n" +
+        "  robot-md-mcp                 # auto-discover ROBOT.md (env, config, cwd walk)\n" +
         "  robot-md-mcp /path/ROBOT.md  # explicit path\n",
     );
-    process.exit(1);
+    process.exit(2);
   }
+  console.error(`robot-md-mcp: ${resolution.message}`);
+  const path = resolution.path;
 
   try {
     const { server, robotName } = createServer(path);
