@@ -19,18 +19,163 @@ async function connected(manifestPath: string) {
 }
 
 describe("MCP server", () => {
-  it("lists six resources for a valid manifest", async () => {
+  it("lists twelve resources (6 core + 6 narrow slices) for a valid manifest", async () => {
     const { client } = await connected(fixturePath);
     const list = await client.listResources();
     const uris = list.resources.map((r) => r.uri).sort();
     expect(uris).toEqual([
       "robot-md://test-bot/body",
+      "robot-md://test-bot/cameras",
       "robot-md://test-bot/capabilities",
       "robot-md://test-bot/context",
+      "robot-md://test-bot/drivers",
       "robot-md://test-bot/frontmatter",
       "robot-md://test-bot/identity",
+      "robot-md://test-bot/kinematics",
+      "robot-md://test-bot/physics",
+      "robot-md://test-bot/poses",
       "robot-md://test-bot/safety",
+      "robot-md://test-bot/vision",
     ]);
+  });
+
+  it("drivers slice returns the drivers[] array as JSON", async () => {
+    const { client } = await connected(fixturePath);
+    const result = await client.readResource({ uri: "robot-md://test-bot/drivers" });
+    const c0 = result.contents[0] as { mimeType?: string; text?: string };
+    expect(c0.mimeType).toBe("application/json");
+    const arr = JSON.parse(String(c0.text));
+    expect(Array.isArray(arr)).toBe(true);
+    expect(arr[0].id).toBe("wheels");
+    expect(arr[0].protocol).toBe("pca9685");
+  });
+
+  it("physics slice excludes kinematics/cameras/poses to stay narrow", async () => {
+    const { client } = await connected(fixturePath);
+    const result = await client.readResource({ uri: "robot-md://test-bot/physics" });
+    const obj = JSON.parse(String((result.contents[0] as { text?: string }).text));
+    expect(obj.type).toBe("wheeled");
+    expect(obj.dof).toBe(2);
+    expect(obj.kinematics).toBeUndefined();
+    expect(obj.cameras).toBeUndefined();
+    expect(obj.poses).toBeUndefined();
+  });
+
+  it("kinematics / cameras / poses / vision return empty defaults when not declared", async () => {
+    const { client } = await connected(fixturePath);
+    const kinem = await client.readResource({ uri: "robot-md://test-bot/kinematics" });
+    expect(JSON.parse(String((kinem.contents[0] as { text?: string }).text))).toEqual([]);
+
+    const cams = await client.readResource({ uri: "robot-md://test-bot/cameras" });
+    expect(JSON.parse(String((cams.contents[0] as { text?: string }).text))).toEqual([]);
+
+    const poses = await client.readResource({ uri: "robot-md://test-bot/poses" });
+    expect(JSON.parse(String((poses.contents[0] as { text?: string }).text))).toEqual({});
+
+    const vision = await client.readResource({ uri: "robot-md://test-bot/vision" });
+    expect(JSON.parse(String((vision.contents[0] as { text?: string }).text))).toEqual([]);
+  });
+
+  it("narrow slices return populated content when the manifest declares them", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "mcp-rich-"));
+    const path = join(dir, "ROBOT.md");
+    writeFileSync(
+      path,
+      `---
+rcan_version: "3.0"
+metadata:
+  robot_name: rich-bot
+physics:
+  type: arm
+  dof: 1
+  kinematics:
+    - id: shoulder_pan
+      axis: z
+      servo_id: 1
+      zero_pose_steps: 2048
+  cameras:
+    - driver_id: oakd
+      primary_stream: rgb
+      mount: world
+      extrinsic: [400.0, 0.0, 300.0, 0, 0, 1.57]
+      extrinsic_source: preset_default
+  poses:
+    ready:
+      description: forward
+      joints: { shoulder_pan: 2048 }
+      source: declared
+drivers:
+  - id: arm_servos
+    protocol: feetech
+    port: /dev/ttyACM0
+vision:
+  object_descriptors:
+    - id: red_lego
+      detector: hsv
+      params: { h_ranges: [[0, 10]], s_min: 110 }
+safety:
+  estop:
+    software: true
+    response_ms: 100
+---
+
+# rich-bot
+
+## Identity
+Rich test robot.
+
+## What rich-bot Can Do
+Pick.
+
+## Safety Gates
+Soft E-stop.
+`,
+    );
+    const { client } = await connected(path);
+
+    const kinem = JSON.parse(
+      String((await client.readResource({ uri: "robot-md://rich-bot/kinematics" })).contents[0].text),
+    );
+    expect(kinem[0].id).toBe("shoulder_pan");
+    expect(kinem[0].servo_id).toBe(1);
+
+    const cams = JSON.parse(
+      String((await client.readResource({ uri: "robot-md://rich-bot/cameras" })).contents[0].text),
+    );
+    expect(cams[0].driver_id).toBe("oakd");
+    expect(cams[0].extrinsic[0]).toBe(400);
+
+    const poses = JSON.parse(
+      String((await client.readResource({ uri: "robot-md://rich-bot/poses" })).contents[0].text),
+    );
+    expect(poses.ready.joints.shoulder_pan).toBe(2048);
+
+    const vision = JSON.parse(
+      String((await client.readResource({ uri: "robot-md://rich-bot/vision" })).contents[0].text),
+    );
+    expect(vision[0].id).toBe("red_lego");
+    expect(vision[0].detector).toBe("hsv");
+  });
+
+  it("/frontmatter description explicitly names itself the escape hatch", async () => {
+    const { client } = await connected(fixturePath);
+    const list = await client.listResources();
+    const fm = list.resources.find((r) => r.uri === "robot-md://test-bot/frontmatter");
+    expect(fm).toBeDefined();
+    expect(String(fm?.description ?? "")).toMatch(/escape hatch/i);
+  });
+
+  it("server instructions list the narrow slices in the routing table", async () => {
+    const { client } = await connected(fixturePath);
+    const instructions = String(client.getInstructions() ?? "");
+    expect(instructions).toContain(".../drivers");
+    expect(instructions).toContain(".../physics");
+    expect(instructions).toContain(".../kinematics");
+    expect(instructions).toContain(".../cameras");
+    expect(instructions).toContain(".../poses");
+    expect(instructions).toContain(".../vision");
+    expect(instructions).toMatch(/escape hatch/i);
+    expect(instructions).toMatch(/RobotRegistryFoundation\/robot-md/);
   });
 
   it("identity resource returns compact one-line summary", async () => {
