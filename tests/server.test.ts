@@ -134,24 +134,24 @@ Soft E-stop.
     const { client } = await connected(path);
 
     const kinem = JSON.parse(
-      String((await client.readResource({ uri: "robot-md://rich-bot/kinematics" })).contents[0].text),
+      String(((await client.readResource({ uri: "robot-md://rich-bot/kinematics" })).contents[0] as { text?: string }).text),
     );
     expect(kinem[0].id).toBe("shoulder_pan");
     expect(kinem[0].servo_id).toBe(1);
 
     const cams = JSON.parse(
-      String((await client.readResource({ uri: "robot-md://rich-bot/cameras" })).contents[0].text),
+      String(((await client.readResource({ uri: "robot-md://rich-bot/cameras" })).contents[0] as { text?: string }).text),
     );
     expect(cams[0].driver_id).toBe("oakd");
     expect(cams[0].extrinsic[0]).toBe(400);
 
     const poses = JSON.parse(
-      String((await client.readResource({ uri: "robot-md://rich-bot/poses" })).contents[0].text),
+      String(((await client.readResource({ uri: "robot-md://rich-bot/poses" })).contents[0] as { text?: string }).text),
     );
     expect(poses.ready.joints.shoulder_pan).toBe(2048);
 
     const vision = JSON.parse(
-      String((await client.readResource({ uri: "robot-md://rich-bot/vision" })).contents[0].text),
+      String(((await client.readResource({ uri: "robot-md://rich-bot/vision" })).contents[0] as { text?: string }).text),
     );
     expect(vision[0].id).toBe("red_lego");
     expect(vision[0].detector).toBe("hsv");
