@@ -4,6 +4,18 @@ All notable changes to `robot-md-mcp` are documented here.
 
 ---
 
+## [Unreleased]
+
+### Changed
+
+- **README stack table.** The `rcan-py` and `rcan-ts` links point at the
+  repositories under `github.com/RobotRegistryFoundation` instead of
+  `github.com/continuonai`. The registry row no longer compares the registry
+  to ICANN; it says what the registry provides: permanent RRN identities and
+  a public resolver at `/r/<rrn>`.
+
+---
+
 ## [0.5.0] - 2026-05-11
 
 ### Added
