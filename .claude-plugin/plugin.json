@@ -1,7 +1,7 @@
 {
   "name": "robot-md",
   "version": "0.5.0",
-  "description": "Bundles the using-robot-md skill and registers the robot-md MCP server. Requires `pip install 'robot-md[hardware]'` (provides the Python `robot-md` CLI). Once installed, ROBOT.md at the workspace root is picked up automatically — manifest reads + motion (execute_task / execute_capability / vision_find / estop) all in one server.",
+  "description": "Bundles the using-robot-md skill and registers the robot-md MCP server (the Python `robot-md mcp` from `pip install robot-md`). ROBOT.md at the workspace root is picked up automatically. Manifest reads and validation work anywhere; motion (execute_task / execute_capability / estop) goes only through robot-md-gateway, which enforces the robot's limits. Without a configured gateway the motion tools refuse.",
   "author": {
     "name": "Robot Registry Foundation",
     "email": "craigm26@gmail.com"
