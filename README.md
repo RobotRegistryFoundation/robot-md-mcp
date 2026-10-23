@@ -18,9 +18,9 @@ This repo is the **agent bridge** — an MCP server that speaks the open [Model 
 | **Agent bridge** ← *this* | [robot-md-mcp](https://github.com/RobotRegistryFoundation/robot-md-mcp) | **MCP server** that exposes a `ROBOT.md` as 4 MCP resources (`frontmatter`, `capabilities`, `safety`, `body`) + 2 tools (`validate`, `render`). One `claude mcp add` away. |
 | **Gateway / Enforcement (Layer 3)** | [robot-md-gateway](https://github.com/RobotRegistryFoundation/robot-md-gateway) | Mandatory exclusive path between agent intent and any actuator. Receives signed RCAN INVOKE envelopes, verifies manifest provenance, applies tier policy + tool allowlist, dispatches to drivers, signs an audit-bundle entry per action. (Renamed from `robot-md-dispatcher` 2026-05.) |
 | **Wire protocol** | [RCAN](https://rcan.dev/spec/) | How robots, gateways, and planners talk. Signed envelopes, LoA enforcement, PQC crypto. Think HTTP for robots. |
-| **Python SDK** | [rcan-py](https://github.com/continuonai/rcan-py) | `pip install rcan` — `RCANMessage`, `RobotURI`, `ConfidenceGate`, `HiTLGate`, `AuditChain`. |
-| **TypeScript SDK** | [rcan-ts](https://github.com/continuonai/rcan-ts) | `npm install rcan-ts` — same API surface for Node + browser. |
-| **Registry** | [Robot Registry Foundation](https://robotregistryfoundation.org) | Permanent RRN identities. Public resolver at `/r/<rrn>`. Like ICANN for robots. |
+| **Python SDK** | [rcan-py](https://github.com/RobotRegistryFoundation/rcan-py) | `pip install rcan` — `RCANMessage`, `RobotURI`, `ConfidenceGate`, `HiTLGate`, `AuditChain`. |
+| **TypeScript SDK** | [rcan-ts](https://github.com/RobotRegistryFoundation/rcan-ts) | `npm install rcan-ts` — same API surface for Node + browser. |
+| **Registry** | [Robot Registry Foundation](https://robotregistryfoundation.org) | Permanent RRN identities. Public resolver at `/r/<rrn>`. |
 | **Reference runtime** | [OpenCastor](https://github.com/craigm26/OpenCastor) | Open-source robot runtime — connects LLM brains to hardware bodies. One implementation of RCAN. |
 
 ## What it does
