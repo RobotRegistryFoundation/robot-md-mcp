@@ -143,17 +143,31 @@ question about this robot's identity, capabilities, safety posture, drivers,
 and registry status. Do not guess or answer from general robotics knowledge
 when the manifest has the answer.
 
+Progressive disclosure: prefer the *narrowest* slice that answers the intent.
+.../frontmatter is the escape hatch when no narrow slice fits — not the
+default.
+
 When to route to this server (operator-intent → resource/tool):
 
   "What can this robot do?"                        → resource: .../capabilities
   "What are its safety gates?" / "Is X dangerous?" → resource: .../safety
   "Give me the full context" / "Brief me"          → resource: .../context
   "What's it called? What's its RRN?"              → resource: .../identity
-  "Read the manifest" / "What's in the YAML?"      → resource: .../frontmatter
   "Read the prose" / "What does the README say?"   → resource: .../body
+  "What drivers / port / baud rate?"               → resource: .../drivers
+  "What's the workspace / DoF / IK provider?"      → resource: .../physics
+  "What's the servo_id of wrist_flex?"             → resource: .../kinematics
+  "What's the rgb-camera extrinsic / intrinsic?"   → resource: .../cameras
+  "What joints does the 'ready' pose set?"         → resource: .../poses
+  "What HSV range detects red_lego?"               → resource: .../vision
+  "Read the YAML" (fallback only)                  → resource: .../frontmatter
   "Is the manifest valid?" / "Did I break it?"     → tool:     validate
   "Give me the canonical YAML"                     → tool:     render
   "Quick-check the robot"                          → tool:     doctor_summary
+
+Spec / design / rationale ("why is the manifest shaped this way?") lives in
+the robot-md repo, not in this manifest — point operators at
+github.com/RobotRegistryFoundation/robot-md (spec/, docs/design/).
 
 Before advising ANY physical motion ("pick that up", "move forward", "rotate"),
 read .../safety first. If the requested scope matches a declared hitl_gate with
@@ -162,9 +176,9 @@ before issuing a driver command. If no matching gate exists for a
 potentially-harmful motion, surface the gap to the operator rather than
 silently proceeding.
 
-The .../context resource is the single best resource to read at session start:
-it combines identity, capabilities, safety gates, and the prose body into one
-block suitable for system-prompt injection.
+The .../context resource is the single best resource to read for a
+"brief me on this robot" first turn. It is on-demand only — do not auto-fetch
+at session start; CLAUDE.md is the eager entry point.
 `.trim();
 
 export function createServer(manifestPath: string): ServerHandle {
@@ -183,7 +197,19 @@ export function createServer(manifestPath: string): ServerHandle {
   );
 
   const register = (
-    kind: "frontmatter" | "capabilities" | "safety" | "body" | "identity" | "context",
+    kind:
+      | "frontmatter"
+      | "capabilities"
+      | "safety"
+      | "body"
+      | "identity"
+      | "context"
+      | "drivers"
+      | "physics"
+      | "kinematics"
+      | "cameras"
+      | "poses"
+      | "vision",
     mimeType: string,
     title: string,
     description: string,
@@ -225,8 +251,8 @@ export function createServer(manifestPath: string): ServerHandle {
   register(
     "frontmatter",
     "application/json",
-    `${robotName} · frontmatter`,
-    `Full YAML frontmatter of the ROBOT.md serialized as a JSON object. Contains every declared field: metadata, physics, drivers, safety, capabilities, compliance, network, extensions. Use when you need to inspect a specific nested field that isn't surfaced by a narrower resource. Matches operator phrases like: "read the manifest", "what's in the frontmatter", "dump the YAML as JSON", "what's the servo_id of the wrist".`,
+    `${robotName} · frontmatter (escape hatch)`,
+    `Full YAML frontmatter of the ROBOT.md serialized as a JSON object. This is the ESCAPE HATCH — prefer a narrower slice first (\`/drivers\`, \`/physics\`, \`/kinematics\`, \`/cameras\`, \`/poses\`, \`/vision\`, \`/capabilities\`, \`/safety\`). Only fetch \`/frontmatter\` when you genuinely need a field no narrower slice exposes, or when comparing fields across blocks. Reading this when a narrow slice would do crowds the agent's context.`,
     (p) => JSON.stringify(p.frontmatter, null, 2),
   );
 
@@ -252,6 +278,70 @@ export function createServer(manifestPath: string): ServerHandle {
     `${robotName} · prose body`,
     `The markdown prose body of ROBOT.md (everything after the closing '---'). Usually contains Identity, "What this robot can do", and Safety Gates sections written for a planner LLM to read. Use this when you need the operator's narrative explanation, not the machine-readable fields. Matches operator phrases like: "read the README", "what does the operator say about this robot", "tell me the background".`,
     (p) => p.body,
+  );
+
+  register(
+    "drivers",
+    "application/json",
+    `${robotName} · drivers`,
+    `The drivers[] array — every declared driver (servos, cameras, sensors, gateways) with protocol/port/baud/host fields. Use when the operator asks "what's the serial port", "what's the baud rate", "what driver is /dev/ttyACM0", "which backend does the arm use", "what cameras are wired up". Cheaper than /frontmatter when the question is driver-scoped.`,
+    (p) => JSON.stringify((p.frontmatter as { drivers?: unknown[] }).drivers ?? [], null, 2),
+  );
+
+  register(
+    "physics",
+    "application/json",
+    `${robotName} · physics (without cameras/kinematics/poses)`,
+    `Physics-block top-level fields: type, dof, solver (DH convention, base_frame, encoder, gripper config, IK provider, ik_frame), workspace bounds. Excludes the heavyweight nested arrays — kinematics → /kinematics, cameras → /cameras, poses → /poses. Matches operator phrases like: "how many DoF", "what IK provider", "what's the workspace envelope", "is the base z-up", "what's the gripper config".`,
+    (p) => {
+      const physics = ((p.frontmatter as { physics?: Record<string, unknown> }).physics ?? {}) as Record<string, unknown>;
+      const slim = { ...physics };
+      delete slim.kinematics;
+      delete slim.cameras;
+      delete slim.poses;
+      return JSON.stringify(slim, null, 2);
+    },
+  );
+
+  register(
+    "kinematics",
+    "application/json",
+    `${robotName} · kinematics`,
+    `The physics.kinematics[] array — one entry per joint: id, axis, limits_deg, length_mm, DH params (a_mm, d_mm), servo_id, encoder_sign, zero_pose_steps. Matches operator phrases like: "what's the servo_id of wrist_flex", "what are the joint limits", "what's the encoder sign for joint N", "DH params", "joint chain".`,
+    (p) => {
+      const physics = ((p.frontmatter as { physics?: { kinematics?: unknown[] } }).physics ?? {}) as { kinematics?: unknown[] };
+      return JSON.stringify(physics.kinematics ?? [], null, 2);
+    },
+  );
+
+  register(
+    "cameras",
+    "application/json",
+    `${robotName} · cameras`,
+    `The physics.cameras[] array — driver_id, primary_stream, mount frame, extrinsic 6-array (x,y,z,roll,pitch,yaw in mm/rad), extrinsic_source. Note: auto-detected v4l2 devices may appear with empty extrinsic — only entries with extrinsic populated are calibrated. Matches operator phrases like: "what's the extrinsic of the rgb camera", "which camera is mounted on the world frame", "is the OAK-D calibrated", "what cameras are declared".`,
+    (p) => {
+      const physics = ((p.frontmatter as { physics?: { cameras?: unknown[] } }).physics ?? {}) as { cameras?: unknown[] };
+      return JSON.stringify(physics.cameras ?? [], null, 2);
+    },
+  );
+
+  register(
+    "poses",
+    "application/json",
+    `${robotName} · named poses`,
+    `The physics.poses{} object — every taught/declared pose by name (e.g. "ready", "home", "stow"), each with a description, per-joint step values, and source (declared/calibrated). Use BEFORE issuing motion that references a named pose. Matches operator phrases like: "what's the ready pose", "where is home", "what joints does <name> set", "is <name> taught", "what poses are declared".`,
+    (p) => {
+      const physics = ((p.frontmatter as { physics?: { poses?: unknown } }).physics ?? {}) as { poses?: unknown };
+      return JSON.stringify(physics.poses ?? {}, null, 2);
+    },
+  );
+
+  register(
+    "vision",
+    "application/json",
+    `${robotName} · vision (object descriptors)`,
+    `The vision.object_descriptors[] array — every declared visual target the robot can detect (HSV ranges, ROIs, area thresholds, detector kind). This is the authoritative list of what the vision pipeline knows how to find; do not invent targets not declared here. Matches operator phrases like: "what HSV range detects red_lego", "what objects can it see", "what's the min_area for the white_bowl", "which detector is used for X".`,
+    (p) => JSON.stringify((p.frontmatter as { vision?: { object_descriptors?: unknown[] } }).vision?.object_descriptors ?? [], null, 2),
   );
 
   server.registerTool(
