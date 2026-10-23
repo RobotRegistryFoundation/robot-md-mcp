@@ -44,11 +44,12 @@ Real operator workflows the plugin was designed for. Each example is a single Cl
 
 ### Example 1 — First-time hobbyist with an SO‑ARM101
 
-A maker just assembled their first robot arm and wants Claude to drive it safely.
+A maker just assembled their first robot arm and wants Claude to move it, with the robot's limits enforced by something other than Claude.
 
 ```
 $ pip install robot-md && robot-md init my-arm --preset so-arm101 \
     --manufacturer "Home Lab" --contact-email me@example.com
+$ robot-md install-gateway     # the bounded layer every motion goes through
 $ cd my-arm && claude
 ```
 
@@ -56,27 +57,31 @@ Inside Claude Code:
 
 > **Operator:** what can this robot do?
 >
-> **Claude:** *(reads `robot-md://my-arm/capabilities` via MCP)* my-arm is a 6‑DOF SO‑ARM101 with five capabilities: `arm.pick`, `arm.place`, `arm.reach`, `vision.describe`, `status.report`. Max payload 0.5 kg. Software E‑stop at 100 ms.
+> **Claude:** *(reads `robot-md://my-arm/capabilities` via MCP)* my-arm is a 6‑DOF SO‑ARM101 with five capabilities: `arm.pick`, `arm.place`, `arm.reach`, `arm.home`, `status.report`. Max payload 0.5 kg. Software E‑stop at 100 ms.
 >
-> **Operator:** pick up the red block and put it in the bowl
+> **Operator:** move the arm to its ready pose
 >
-> **Claude:** *(reads `/safety` first)* The `arm.pick` capability has an HITL gate requiring explicit authorization for destructive scopes. The bowl-placement isn't destructive — I can proceed without extra auth. Running now.
+> **Claude:** *(reads `/safety` first)* That's `arm.reach`. It goes to robot-md-gateway, which checks it against the arm's limits and paces it. Before I send it: are you at the arm, watching it, with nobody else in reach and a hand on the power switch or plug?
+>
+> **Operator:** yes, hand on the plug
+>
+> **Claude:** *(calls `execute_capability`, which sends `arm.reach` to the gateway)* The gateway ran it: executed, 2.7 s, the arm is at the ready pose.
 
-**What the plugin does here:** the `using-robot-md` skill blocks answering from general robotics priors (the operator's declared 0.5 kg payload overrides Claude's training-data assumptions), enforces a safety-read before any motion, and routes capability questions to MCP resources instead of guessing.
+**What the plugin does here:** the `using-robot-md` skill blocks answering from general robotics priors (the operator's declared 0.5 kg payload overrides Claude's training-data assumptions), checks that a person is at the machine with a hardware stop before any motion, and sends motion only through robot-md-gateway, which decides. The operator's "yes" confirms they are at the machine; it is not what allows the motion. Had the gateway refused, Claude would report the refusal as given and stop.
 
 ### Example 2 — Safety review before a sensitive action
 
-A clinical-lab operator is about to let Claude manipulate a glass vial. They want an explicit safety check, not a generic answer.
+A clinical-lab operator is about to ask Claude to manipulate a glass vial. They want an explicit safety check, not a generic answer.
 
 > **Operator:** /check-safety action="pick up the glass vial near the centrifuge"
 >
-> **Claude:** *(invokes the `check-safety` MCP prompt, which cross-references declared `hitl_gates[]`)* ⚠ **Authorization required.** Your manifest declares a gate named `fragile-objects` with `require_auth: true` for scopes matching "glass" and "vial". The gate requires your explicit "yes, authorize" before any motion. I won't proceed until you confirm.
+> **Claude:** *(invokes the `check-safety` MCP prompt, which cross-references declared `hitl_gates[]`)* ⚠ **Gated — `destructive`.** Your manifest gates the `destructive` scope with `require_auth: true`, and picking up glass falls under it. That needs a person's confirmation from outside this conversation, which robot-md does not have yet, so the robot-md MCP server will refuse `arm.pick` here.
 >
-> **Operator:** yes, authorize the pick — the vial is capped and empty
+> **Operator:** yes, I authorize the pick — the vial is capped and empty
 >
-> **Claude:** Acknowledged. Executing `arm.pick` with the authorized scope.
+> **Claude:** I can't take that as authorization: a reply in chat isn't a confirmation the gateway can check, and robot-md refuses gated motion. Whether and how this pick runs is your decision at the machine.
 
-**What the plugin does here:** the `/check-safety` slash command (an MCP prompt, not a hallucinated protocol) gives operators a deterministic gate check. The skill's rules ban Claude from silently proceeding past an undeclared scope; it either finds a matching gate or surfaces the gap.
+**What the plugin does here:** the `/check-safety` slash command (an MCP prompt, not a hallucinated protocol) gives operators a deterministic gate check. The skill's rules ban Claude from treating a chat reply as authorization for motion and from silently proceeding past an undeclared scope; it either finds a matching gate or surfaces the gap.
 
 ### Example 3 — Team sharing a fleet-robot manifest
 

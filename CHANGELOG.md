@@ -6,6 +6,41 @@ All notable changes to `robot-md-mcp` are documented here.
 
 ## [Unreleased]
 
+### Changed — what this package tells Claude about motion
+
+- **The `using-robot-md` skill no longer tells Claude to move the robot after
+  a "yes" in chat.** It told Claude to ask "authorize this specific action?"
+  and to treat the reply as the gate being satisfied; the robot-md MCP server
+  it routes to then moved the arm from inside its own process on a
+  `confirm_token` the model supplied. The skill now opens with seven motion
+  rules: motion goes only through robot-md-gateway; a person at the machine,
+  with a hardware stop within reach, comes before any motion; a chat "yes" is
+  never authorization; gated scopes are refused; refusals stand; Claude never
+  clears a stop; test runs (Bounded Embodiment EV runs, `robot-md trial`) are
+  started by the person. A new section says how the skill relates to the
+  bounded-embodiment skill: they agree on all of that, and differ in one place
+  (general operation behind a running gateway versus test runs and gate
+  work), with the stricter rule winning when it is unclear which applies.
+  Calibration commands that open the servo port, and `robot-md
+  install-gateway`, are handed to the person. The pick-place trial section no
+  longer names `mcp__robot-md__invoke`, a tool robot-md's MCP server never
+  registered. The bundled copy in robot-md must match this file
+  (robot-md's `skill-sync-check`).
+- **Server instructions, the `context` and `safety` resources and the
+  `check-safety` prompt** say the same: a reply in chat is never
+  authorization for motion, and motion goes only through robot-md-gateway.
+  This server still has no motion tools; a test pins that.
+- **The plugin description** no longer advertises "manifest reads + motion …
+  all in one server" or requires `robot-md[hardware]`: the Python server's
+  motion tools send to robot-md-gateway and refuse without one.
+- **README examples 1 and 2** show the gateway flow: Claude checks that a
+  person is at the machine with a hardware stop, the gateway decides, and a
+  reply in chat does not open a gate.
+
+  **Migrating.** Nothing to change in this package's API. A robot moved
+  through the plugin needs robot-md-gateway (`robot-md install-gateway` on the
+  robot) and robot-md with the matching change; see robot-md's CHANGELOG.
+
 ### Changed
 
 - **README stack table.** The `rcan-py` and `rcan-ts` links point at the
