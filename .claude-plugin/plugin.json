@@ -1,10 +1,25 @@
 {
   "name": "robot-md",
-  "version": "0.5.0",
+  "displayName": "robot-md",
+  "version": "0.5.1",
   "description": "Bundles the using-robot-md skill and registers the robot-md MCP server. Requires `pip install 'robot-md[hardware]'` (provides the Python `robot-md` CLI). Once installed, ROBOT.md at the workspace root is picked up automatically — manifest reads + motion (execute_task / execute_capability / vision_find / estop) all in one server.",
   "author": {
     "name": "Robot Registry Foundation",
-    "email": "craigm26@gmail.com"
+    "email": "craigm26@gmail.com",
+    "url": "https://robotmd.dev"
   },
-  "homepage": "https://robotmd.dev"
+  "homepage": "https://robotmd.dev",
+  "repository": "https://github.com/RobotRegistryFoundation/robot-md-mcp",
+  "license": "Apache-2.0",
+  "keywords": [
+    "robotics",
+    "robot-md",
+    "mcp",
+    "embodied-ai",
+    "safety",
+    "so-arm101"
+  ],
+  "icon": "./.claude-plugin/icon.png",
+  "documentationUrl": "https://docs.robotmd.dev/mcp/",
+  "supportUrl": "https://github.com/RobotRegistryFoundation/robot-md-mcp/issues"
 }

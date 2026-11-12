@@ -6,6 +6,16 @@ All notable changes to `robot-md-mcp` are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **Directory listing metadata.** The plugin manifest is 0.5.1 and carries
+  `repository`, `license`, `keywords`, `documentationUrl`, `supportUrl`, and
+  an `icon` at `.claude-plugin/icon.png`, ready for submission to Anthropic's
+  plugin directory. `claude plugin validate --strict` passes with nothing to
+  report.
+- README documents the one-line `/plugin install robot-md --marketplace ...`
+  form for Claude Code 2.1.275 and later.
+
 ### Changed
 
 - **README stack table.** The `rcan-py` and `rcan-ts` links point at the
