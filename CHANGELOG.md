@@ -6,6 +6,17 @@ All notable changes to `robot-md-mcp` are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- **The plugin starts the MCP server through a shipped launcher.** `.mcp.json`
+  now runs `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/start-mcp-server.py`, which
+  finds the `robot-md` CLI on PATH and runs `robot-md mcp` over the same stdio.
+  Anthropic's plugin directory holds a bare `robot-md` command for manual
+  review because its checks can't read what an unknown program does; a
+  shipped script they can read clears that hold. If the CLI is missing, the
+  launcher exits 1 with the `pip install` line instead of a bare
+  command-not-found. Plugin manifest 0.5.2.
+
 ### Added
 
 - **Directory listing metadata.** The plugin manifest is 0.5.1 and carries

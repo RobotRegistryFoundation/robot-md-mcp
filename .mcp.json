@@ -1,6 +1,6 @@
 {
   "robot-md": {
-    "command": "robot-md",
-    "args": ["mcp"]
+    "command": "python3",
+    "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/start-mcp-server.py"]
   }
 }
