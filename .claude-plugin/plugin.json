@@ -1,7 +1,7 @@
 {
   "name": "robot-md",
   "displayName": "robot-md",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Bundles the using-robot-md skill and registers the robot-md MCP server. Requires `pip install 'robot-md[hardware]'` (provides the Python `robot-md` CLI). Once installed, ROBOT.md at the workspace root is picked up automatically — manifest reads + motion (execute_task / execute_capability / vision_find / estop) all in one server.",
   "author": {
     "name": "Robot Registry Foundation",
