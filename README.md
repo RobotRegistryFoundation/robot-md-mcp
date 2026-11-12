@@ -124,7 +124,13 @@ The plugin bundles the `using-robot-md` skill **and** auto-registers this MCP se
 
 ### Phase 1 — Install the plugin (one-time)
 
-Inside Claude Code:
+Inside Claude Code 2.1.275 or later, one line:
+
+```
+/plugin install robot-md --marketplace RobotRegistryFoundation/claude-code-plugins
+```
+
+On older versions, add the marketplace first:
 
 ```
 /plugin marketplace add RobotRegistryFoundation/claude-code-plugins
