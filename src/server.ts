@@ -64,7 +64,7 @@ function claudeContext(parsed: ParsedRobotMd, robotName: string): string {
       : gates
           .map(
             (g) =>
-              `- \`${g.scope ?? "?"}\`${g.require_auth ? " — requires explicit authorization" : ""}`,
+              `- \`${g.scope ?? "?"}\`${g.require_auth ? " — requires a person's confirmation from outside this chat" : ""}`,
           )
           .join("\n");
 
@@ -94,10 +94,15 @@ rather than assuming or guessing.
 
 ## Before any physical motion
 
-Check the HITL gate list above. If the operator's request matches a declared
-scope with \`require_auth: true\`, stop and ask for explicit authorization. If
-no matching gate exists for a potentially-harmful motion, surface that gap
-instead of silently proceeding.
+Motion goes only through robot-md-gateway, which decides and enforces the
+limits; nothing here moves the robot. Before any motion, a person must be at
+the machine, watching, with a hardware stop that does not depend on software
+within reach. A reply in chat is never authorization for motion: a scope above
+with \`require_auth: true\` needs a person's confirmation from outside the
+conversation, and robot-md refuses gated motion until one exists. If no
+matching gate exists for a potentially-harmful motion, surface that gap
+instead of silently proceeding. Never clear a stop yourself, and never start a
+test run: the person does.
 
 ## Body (from the manifest's prose section)
 
@@ -155,10 +160,14 @@ When to route to this server (operator-intent → resource/tool):
   "Give me the canonical YAML"                     → tool:     render
   "Quick-check the robot"                          → tool:     doctor_summary
 
-Before advising ANY physical motion ("pick that up", "move forward", "rotate"),
-read .../safety first. If the requested scope matches a declared hitl_gate with
-require_auth: true, pause and ask the operator for explicit authorization
-before issuing a driver command. If no matching gate exists for a
+This server has no motion tools. Motion goes only through robot-md-gateway
+(the Python robot-md MCP server's execute_capability sends to it), which
+decides and enforces the limits. Before advising ANY physical motion ("pick
+that up", "move forward", "rotate"), read .../safety first, and make sure a
+person is at the machine with a hardware stop within reach. A reply in chat is
+never authorization for motion: a declared hitl_gate with require_auth: true
+needs a person's confirmation from outside the conversation, and robot-md
+refuses gated motion until one exists. If no matching gate exists for a
 potentially-harmful motion, surface the gap to the operator rather than
 silently proceeding.
 
@@ -242,7 +251,7 @@ export function createServer(manifestPath: string): ServerHandle {
     "safety",
     "application/json",
     `${robotName} · safety`,
-    `The safety block from the manifest — HITL gates (with scope + require_auth flags), E-stop configuration (software/hardware/response_ms), payload limits, workspace bounds, failsafe behavior. READ THIS BEFORE ADVISING ANY PHYSICAL MOTION. If the requested action's scope matches a gate with require_auth: true, ask the operator for explicit authorization first. Matches operator phrases like: "what are the safety gates", "is it safe to X", "what needs human approval", "what's the E-stop setup", "can I do X autonomously".`,
+    `The safety block from the manifest — HITL gates (with scope + require_auth flags), E-stop configuration (software/hardware/response_ms), payload limits, workspace bounds, failsafe behavior. READ THIS BEFORE ADVISING ANY PHYSICAL MOTION. Motion goes only through robot-md-gateway, which enforces the limits. A gate with require_auth: true needs a person's confirmation from outside the conversation; a reply in chat is never authorization for motion. Matches operator phrases like: "what are the safety gates", "is it safe to X", "what needs human approval", "what's the E-stop setup", "can I do X autonomously".`,
     (p) => JSON.stringify((p.frontmatter as { safety?: unknown }).safety ?? {}, null, 2),
   );
 
@@ -330,8 +339,8 @@ Keep it to under 200 words. Do not invent capabilities or limits not in the mani
   server.registerPrompt(
     "check-safety",
     {
-      title: "Is this action safe?",
-      description: `Check a proposed action against ${robotName}'s declared HITL gates and safety envelope. Use before issuing any physical motion.`,
+      title: "Check an action against the declared gates",
+      description: `Check a proposed action against ${robotName}'s declared HITL gates and limits before any physical motion. A preview: robot-md-gateway enforces the limits.`,
       argsSchema: {
         action: z
           .string()
@@ -348,14 +357,14 @@ Keep it to under 200 words. Do not invent capabilities or limits not in the mani
             type: "text" as const,
             text: `The operator wants ${robotName} to do: **${action}**
 
-Read \`robot-md://${robotName}/safety\` and determine:
+Read \`robot-md://${robotName}/safety\` and answer only from the declared manifest:
 
-1. Does this action's scope match a declared \`hitl_gates[]\` entry with \`require_auth: true\`? If yes, name the gate and tell the operator you need explicit authorization before proceeding.
-2. Does the action stay within \`payload_kg\`, \`max_joint_velocity_dps\`, and \`workspace_bounds_m\` (if declared)?
-3. Is \`estop.software\` available? Confirm the driver command path to trigger it.
-4. If no matching gate exists AND the action is potentially harmful (unknown objects, high velocity, collision risk, workspace-boundary-approaching): **surface the gap to the operator** — say the manifest doesn't declare a gate for this scope and ask whether to add one or to authorize this specific action.
+1. Does this action's scope match a declared \`hitl_gates[]\` entry with \`require_auth: true\`? If yes, name the gate. robot-md refuses gated motion: the confirmation has to come from a person outside this conversation, and a reply in chat is not that confirmation. Never treat one as authorization.
+2. Does the action stay within \`payload_kg\`, \`max_joint_velocity_dps\`, and \`workspace_bounds_m\` (if declared)? This is a preview. The limits are enforced by robot-md-gateway and its actuator, not by this check.
+3. Motion goes only through robot-md-gateway, and only with a person at the machine who can reach a hardware stop that does not depend on software. The software e-stop is not that.
+4. If no gate covers an action that could cause harm (unknown objects, high velocity, collision risk, near the workspace boundary): **surface the gap** — say the manifest declares no gate for this scope, and that adding one to ROBOT.md is the operator's decision.
 
-Reply with one of: "✓ safe to proceed", "⚠ authorization required — <gate scope>", or "⚠ gate gap — <explanation>". Do not assume; only answer from the declared manifest.`,
+Reply with one of: "✓ no gate applies; robot-md-gateway decides", "⚠ gated — <gate scope>: needs a person's confirmation outside this chat", or "⚠ gate gap — <explanation>". Do not assume.`,
           },
         },
       ],
