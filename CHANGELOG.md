@@ -6,6 +6,40 @@ All notable changes to `robot-md-mcp` are documented here.
 
 ## [Unreleased]
 
+### Fixed — the plugin no longer describes a server it isn't running
+
+- **The launcher refuses robot-md older than 2.0.0.** `scripts/start-mcp-server.py`
+  now reads `robot-md --version` and exits 1, with the upgrade line, unless it
+  finds 2.0.0 or newer. Every robot-md on PyPI today (1.10.6 and older) ships an
+  MCP server whose `execute_capability` and `execute_task` move the arm from
+  inside the server process, behind a gate that accepts any non-empty token. The
+  plugin's description and the skill below say motion goes only through
+  robot-md-gateway, which is true only from robot-md 2.0.0
+  (RobotRegistryFoundation/robot-md#114). Until that release is on PyPI, the
+  plugin's MCP server doesn't start. Plugin manifest 0.6.0.
+- **The `using-robot-md` skill** fixes three problems the
+  RobotRegistryFoundation/robot-md-mcp#16 review found after it merged:
+  - It told Claude to run `robot-md doctor --path ROBOT.md`, which opens the servo
+    port; it now says `--hardware off`. It said `robot-md init` touches no
+    actuator, but `init` opens every serial port to look for servos; the person
+    runs it now.
+  - It promised that gated motion is refused, but described a match that misses
+    the so-arm101 preset's `destructive` and `system` gates. It now says a
+    `require_auth` gate on a scope that covers motion refuses every motion, as
+    robot-md 2.0.0 does, and that on a manifest made from that preset every
+    motion is refused for now.
+  - It described the bounded-embodiment skill as limited to test runs. That
+    skill forbids motion tools on real hardware in every session, so with both
+    installed Claude calls no motion tool; the pick-place trial says the person
+    runs the steps in that case.
+
+  It also tells Claude never to send to `/v1/invoke` itself, to read the
+  telemetry's `reached` rather than trust `status: ok`, to hand
+  `robot-md pose teach` to the person, and how clearing a stop works after a
+  gateway trip. README examples 1 and 2 match: on the so-arm101 preset, Claude
+  moves nothing through the MCP server yet. robot-md's bundled copy must match
+  this file (robot-md's `skill-sync-check`).
+
 ### Changed — what this package tells Claude about motion
 
 - **Plugin manifest 0.5.3.** Its description now says motion goes only

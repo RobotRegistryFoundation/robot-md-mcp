@@ -140,8 +140,26 @@ describe("using-robot-md skill", () => {
 
   it("states how it relates to the bounded-embodiment skill", () => {
     expect(skill).toContain("### How this skill relates to the bounded-embodiment skill");
-    expect(skill).toContain("They differ in one place, for a reason");
-    expect(skill).toContain("the stricter rule wins");
+    // bounded-embodiment forbids motion tools on real hardware in every
+    // session, not only in test runs; the skill must not say otherwise.
+    expect(skill).toContain("Its motion rule is stricter than this one");
+    expect(skill).toContain("you call no motion tool on real hardware");
+    expect(skill).toContain("follow the stricter rule");
+    expect(skill).not.toContain("They differ in one place, for a reason");
+  });
+
+  it("never tells Claude to run a command that opens the servo port", () => {
+    expect(skill).toContain("robot-md doctor --path ROBOT.md --hardware off");
+    expect(skill).not.toContain("Don't add `--hardware`: that opens the servo port");
+    expect(skill).not.toContain("Steps 1, 2 and 4 touch no actuator");
+    expect(skill).toContain("Give the person `robot-md init");
+    expect(skill).toContain("`robot-md pose teach`");
+  });
+
+  it("says which gates refuse motion, in the gateway's scope names", () => {
+    expect(skill).toContain("A gate on a scope that covers motion");
+    expect(skill).toContain("`destructive` and `system`");
+    expect(skill).toContain("read the telemetry's `reached`");
   });
 });
 
@@ -152,5 +170,6 @@ describe("plugin manifest", () => {
     ) as { description: string };
     expect(plugin.description).toContain("robot-md-gateway");
     expect(plugin.description).not.toContain("all in one server");
+    expect(plugin.description).toContain("robot-md 2.0.0 or newer");
   });
 });
