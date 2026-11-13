@@ -152,7 +152,8 @@ The same `--scope` flag works on `/plugin marketplace add`. Match the scopes: if
 ### Phase 2 — Set up a robot project (per project)
 
 ```bash
-# If you don't have one yet, create a ROBOT.md (the plugin's MCP server needs robot-md 2.0.0 or newer):
+# If you don't have one yet, create a ROBOT.md. The plugin's MCP server needs robot-md
+# 2.0.0 or newer; if pip finds no 2.0.0, it isn't released yet.
 pip install 'robot-md>=2.0.0'
 robot-md init my-robot --preset so-arm101 --manufacturer Acme --contact-email you@example.com
 

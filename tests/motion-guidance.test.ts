@@ -154,6 +154,11 @@ describe("using-robot-md skill", () => {
     expect(skill).not.toContain("Steps 1, 2 and 4 touch no actuator");
     expect(skill).toContain("Give the person `robot-md init");
     expect(skill).toContain("`robot-md pose teach`");
+    // Every doctor command keeps --hardware off, so no default can open the port.
+    for (const line of skill.split("\n").filter((l) => /robot-md doctor\b/.test(l))) {
+      expect(line).toContain("--hardware off");
+    }
+    expect(skill).not.toContain("Talk to the gateway at `127.0.0.1:8080`");
   });
 
   it("says which gates refuse motion, in the gateway's scope names", () => {

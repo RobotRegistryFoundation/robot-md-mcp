@@ -16,7 +16,10 @@ All notable changes to `robot-md-mcp` are documented here.
   plugin's description and the skill below say motion goes only through
   robot-md-gateway, which is true only from robot-md 2.0.0
   (RobotRegistryFoundation/robot-md#114). Until that release is on PyPI, the
-  plugin's MCP server doesn't start. Plugin manifest 0.6.0.
+  plugin's MCP server doesn't start. It reads only the whole first line of
+  `robot-md --version`, so other text can't pass a 1.x, and it refuses a
+  pre-release or dev build of 2.0.0, a `--version` that fails or hangs, and
+  output it can't read, each with its own message. Plugin manifest 0.6.0.
 - **The `using-robot-md` skill** fixes three problems the
   RobotRegistryFoundation/robot-md-mcp#16 review found after it merged:
   - It told Claude to run `robot-md doctor --path ROBOT.md`, which opens the servo

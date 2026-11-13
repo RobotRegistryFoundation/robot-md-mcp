@@ -18,7 +18,7 @@ const runnable = process.platform !== "win32" && python3 !== "";
 
 let root = "";
 
-function fakeRobotMd(versionLine: string): string {
+function fakeRobotMd(versionOutput: string, versionExit = 0): string {
   const dir = mkdtempSync(join(root, "bin-"));
   const exe = join(dir, "robot-md");
   writeFileSync(
@@ -26,8 +26,8 @@ function fakeRobotMd(versionLine: string): string {
     [
       "#!/bin/sh",
       'if [ "$1" = "--version" ]; then',
-      `  echo "${versionLine}"`,
-      "  exit 0",
+      `  printf '%s\\n' "${versionOutput}"`,
+      `  exit ${versionExit}`,
       "fi",
       'if [ "$1" = "mcp" ]; then',
       '  echo "MCP-STARTED $*"',
@@ -69,11 +69,34 @@ describe.skipIf(!runnable)("plugin launcher (scripts/start-mcp-server.py)", () =
     const result = launch(fakeRobotMd("robot-md (unknown)"));
     expect(result.status).toBe(1);
     expect(result.stdout).not.toMatch(/MCP-STARTED/);
-    expect(result.stderr).toMatch(/a version it could not read/);
+    expect(result.stderr).toMatch(/not a release version/);
+  });
+
+  it("reads only the whole first line, so other text can't pass a 1.x", () => {
+    for (const output of ["python 3.12.1 robot-md 1.10.6", "robot-md 1.10.6 (built on 2.0.0)"]) {
+      const result = launch(fakeRobotMd(output));
+      expect(result.status).toBe(1);
+      expect(result.stdout).not.toMatch(/MCP-STARTED/);
+    }
+  });
+
+  it("refuses a 2.0.0 pre-release or dev build", () => {
+    for (const version of ["robot-md 2.0.0rc1", "robot-md 2.0.0a1", "robot-md 2.0.0.dev3"]) {
+      const result = launch(fakeRobotMd(version));
+      expect(result.status).toBe(1);
+      expect(result.stdout).not.toMatch(/MCP-STARTED/);
+    }
+  });
+
+  it("refuses when `robot-md --version` fails, even with a good version string", () => {
+    const result = launch(fakeRobotMd("robot-md 2.0.0", 3));
+    expect(result.status).toBe(1);
+    expect(result.stdout).not.toMatch(/MCP-STARTED/);
+    expect(result.stderr).toMatch(/exited 3/);
   });
 
   it("starts robot-md 2.0.0 or newer as `robot-md mcp`", () => {
-    for (const version of ["robot-md 2.0.0", "robot-md 2.1.3"]) {
+    for (const version of ["robot-md 2.0.0", "robot-md 2.1.3", "robot-md 10.0.0", "robot-md 2.0.0.post1"]) {
       const result = launch(fakeRobotMd(version));
       expect(result.status).toBe(0);
       expect(result.stdout).toMatch(/MCP-STARTED mcp/);
