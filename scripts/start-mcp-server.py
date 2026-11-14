@@ -10,10 +10,14 @@ or installed.
 The version check is a safety check. In robot-md 1.x, the MCP server's
 motion tools (`execute_capability`, `execute_task`) move the arm from inside
 the server process, and their gate accepts any non-empty token, which the
-model can supply. From robot-md 2.0.0 they send every step to
-robot-md-gateway and refuse without one, which is what this plugin's skill
-and description say. So the launcher refuses to start an older server rather
-than let the plugin's text describe a server that isn't running.
+model can supply. robot-md 2.0.0 sends every step to robot-md-gateway, but
+its gate check matches a gate only against a capability's family or name,
+so a gate on a scope such as `destructive` or `system`, which is how the
+so-arm101 preset gates the arm, refuses nothing: a gated motion is sent and
+runs. From robot-md 2.0.1 a gate that needs a person refuses every motion
+(RobotRegistryFoundation/robot-md#121), which is what this plugin's skill
+and description say. So the launcher refuses to start an older server
+rather than let the plugin's text describe a server that isn't running.
 """
 
 import os
@@ -23,19 +27,19 @@ import subprocess
 import sys
 
 # The first robot-md release whose MCP motion tools go only through
-# robot-md-gateway.
-MIN_ROBOT_MD = (2, 0, 0)
+# robot-md-gateway and refuse every motion under a gate that needs a person.
+MIN_ROBOT_MD = (2, 0, 1)
 
 INSTALL_HINT = (
     "robot-md MCP server: the `robot-md` command was not found on PATH.\n"
-    "Install it with:  python3 -m pip install --user 'robot-md[hardware]>=2.0.0'\n"
-    "If pip finds no 2.0.0, it isn't released yet, and this plugin's MCP server\n"
+    "Install it with:  python3 -m pip install --user 'robot-md[hardware]>=2.0.1'\n"
+    "If pip finds no 2.0.1, it isn't released yet, and this plugin's MCP server\n"
     "can't start until it is. Then restart Claude Code.\n"
     "Docs: https://docs.robotmd.dev/mcp/\n"
 )
 
-# The whole first line of `robot-md --version`, e.g. "robot-md 2.0.0". A
-# pre-release (2.0.0rc1, 2.0.0.dev3) or any other text doesn't match, so it
+# The whole first line of `robot-md --version`, e.g. "robot-md 2.0.1". A
+# pre-release (2.0.1rc1, 2.0.1.dev3) or any other text doesn't match, so it
 # is refused: PEP 440 puts a pre-release before the release it leads to.
 VERSION_LINE = re.compile(r"robot-md (\d+)\.(\d+)\.(\d+)(?:\.post\d+)?")
 
@@ -72,11 +76,22 @@ def refusal_message(found, problem) -> str:
             "Reinstall robot-md, then restart Claude Code. Docs: https://docs.robotmd.dev/mcp/\n"
         )
     seen = ".".join(str(part) for part in found)
+    if found < (2, 0, 0):
+        why = (
+            "In robot-md 1.x the MCP server's motion tools move the arm from inside the\n"
+            "server process, past robot-md-gateway.\n"
+        )
+    else:
+        why = (
+            f"robot-md {seen} sends motion through robot-md-gateway, but its MCP server\n"
+            "doesn't refuse a motion gated on a scope such as `destructive` or `system`,\n"
+            "which is how the so-arm101 preset gates the arm.\n"
+        )
     return (
         f"robot-md MCP server: this plugin needs robot-md {want} or newer, and found {seen}.\n"
-        "In robot-md 1.x the MCP server's motion tools move the arm from inside the\n"
-        "server process, past robot-md-gateway. From robot-md 2.0.0 every motion goes\n"
-        "through the gateway, which is what this plugin's skill tells Claude.\n"
+        + why
+        + f"From robot-md {want} every motion goes through the gateway, and a gate that\n"
+        "needs a person refuses it, which is what this plugin's skill tells Claude.\n"
         f"Upgrade with:  python3 -m pip install --user --upgrade 'robot-md[hardware]>={want}'\n"
         f"If pip finds no {want}, it isn't released yet, and this plugin's MCP server\n"
         "can't start until it is. Then restart Claude Code.\n"

@@ -47,7 +47,7 @@ Real operator workflows the plugin was designed for. Each example is a single Cl
 A maker just assembled their first robot arm and wants Claude to move it, with the robot's limits enforced by something other than Claude.
 
 ```
-$ pip install 'robot-md>=2.0.0' && robot-md init my-arm --preset so-arm101 \
+$ pip install 'robot-md>=2.0.1' && robot-md init my-arm --preset so-arm101 \
     --manufacturer "Home Lab" --contact-email me@example.com
 $ robot-md install-gateway     # the bounded layer every motion goes through
 $ cd my-arm && claude
@@ -153,8 +153,8 @@ The same `--scope` flag works on `/plugin marketplace add`. Match the scopes: if
 
 ```bash
 # If you don't have one yet, create a ROBOT.md. The plugin's MCP server needs robot-md
-# 2.0.0 or newer; if pip finds no 2.0.0, it isn't released yet.
-pip install 'robot-md>=2.0.0'
+# 2.0.1 or newer; if pip finds no 2.0.1, it isn't released yet.
+pip install 'robot-md>=2.0.1'
 robot-md init my-robot --preset so-arm101 --manufacturer Acme --contact-email you@example.com
 
 # Then launch Claude Code from the project root:

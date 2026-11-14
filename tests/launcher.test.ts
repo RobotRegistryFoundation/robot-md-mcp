@@ -6,8 +6,10 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // The plugin's .mcp.json runs scripts/start-mcp-server.py. It must refuse to
-// start a robot-md older than 2.0.0, whose MCP motion tools move the arm from
-// inside the server process instead of sending to robot-md-gateway.
+// start a robot-md older than 2.0.1. In 1.x the MCP motion tools move the arm
+// from inside the server process instead of sending to robot-md-gateway; in
+// 2.0.0 they send to the gateway but don't refuse a motion gated on a scope
+// such as `destructive` or `system`.
 
 const here = resolve(fileURLToPath(import.meta.url), "..");
 const launcher = resolve(here, "..", "scripts", "start-mcp-server.py");
@@ -61,8 +63,20 @@ describe.skipIf(!runnable)("plugin launcher (scripts/start-mcp-server.py)", () =
     const result = launch(fakeRobotMd("robot-md 1.10.6"));
     expect(result.status).toBe(1);
     expect(result.stdout).not.toMatch(/MCP-STARTED/);
-    expect(result.stderr).toMatch(/needs robot-md 2\.0\.0 or newer, and found 1\.10\.6/);
+    expect(result.stderr).toMatch(/needs robot-md 2\.0\.1 or newer, and found 1\.10\.6/);
+    expect(result.stderr).toMatch(/In robot-md 1\.x/);
     expect(result.stderr).toMatch(/robot-md-gateway/);
+  });
+
+  it("refuses robot-md 2.0.0, whose MCP server sends gated motion", () => {
+    for (const version of ["robot-md 2.0.0", "robot-md 2.0.0.post1"]) {
+      const result = launch(fakeRobotMd(version));
+      expect(result.status).toBe(1);
+      expect(result.stdout).not.toMatch(/MCP-STARTED/);
+      expect(result.stderr).toMatch(/needs robot-md 2\.0\.1 or newer, and found 2\.0\.0/);
+      expect(result.stderr).toMatch(/`destructive` or `system`/);
+      expect(result.stderr).toMatch(/robot-md\[hardware\]>=2\.0\.1/);
+    }
   });
 
   it("refuses when the version can't be read", () => {
@@ -73,15 +87,15 @@ describe.skipIf(!runnable)("plugin launcher (scripts/start-mcp-server.py)", () =
   });
 
   it("reads only the whole first line, so other text can't pass a 1.x", () => {
-    for (const output of ["python 3.12.1 robot-md 1.10.6", "robot-md 1.10.6 (built on 2.0.0)"]) {
+    for (const output of ["python 3.12.1 robot-md 1.10.6", "robot-md 1.10.6 (built on 2.0.1)"]) {
       const result = launch(fakeRobotMd(output));
       expect(result.status).toBe(1);
       expect(result.stdout).not.toMatch(/MCP-STARTED/);
     }
   });
 
-  it("refuses a 2.0.0 pre-release or dev build", () => {
-    for (const version of ["robot-md 2.0.0rc1", "robot-md 2.0.0a1", "robot-md 2.0.0.dev3"]) {
+  it("refuses a 2.0.1 pre-release or dev build", () => {
+    for (const version of ["robot-md 2.0.1rc1", "robot-md 2.0.1a1", "robot-md 2.0.1.dev3"]) {
       const result = launch(fakeRobotMd(version));
       expect(result.status).toBe(1);
       expect(result.stdout).not.toMatch(/MCP-STARTED/);
@@ -89,14 +103,14 @@ describe.skipIf(!runnable)("plugin launcher (scripts/start-mcp-server.py)", () =
   });
 
   it("refuses when `robot-md --version` fails, even with a good version string", () => {
-    const result = launch(fakeRobotMd("robot-md 2.0.0", 3));
+    const result = launch(fakeRobotMd("robot-md 2.0.1", 3));
     expect(result.status).toBe(1);
     expect(result.stdout).not.toMatch(/MCP-STARTED/);
     expect(result.stderr).toMatch(/exited 3/);
   });
 
-  it("starts robot-md 2.0.0 or newer as `robot-md mcp`", () => {
-    for (const version of ["robot-md 2.0.0", "robot-md 2.1.3", "robot-md 10.0.0", "robot-md 2.0.0.post1"]) {
+  it("starts robot-md 2.0.1 or newer as `robot-md mcp`", () => {
+    for (const version of ["robot-md 2.0.1", "robot-md 2.1.0", "robot-md 10.0.0", "robot-md 2.0.1.post1"]) {
       const result = launch(fakeRobotMd(version));
       expect(result.status).toBe(0);
       expect(result.stdout).toMatch(/MCP-STARTED mcp/);
@@ -108,6 +122,6 @@ describe.skipIf(!runnable)("plugin launcher (scripts/start-mcp-server.py)", () =
     const result = launch(empty);
     expect(result.status).toBe(1);
     expect(result.stderr).toMatch(/was not found on PATH/);
-    expect(result.stderr).toMatch(/robot-md\[hardware\]>=2\.0\.0/);
+    expect(result.stderr).toMatch(/robot-md\[hardware\]>=2\.0\.1/);
   });
 });

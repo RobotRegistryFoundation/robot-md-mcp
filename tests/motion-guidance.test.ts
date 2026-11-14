@@ -162,9 +162,30 @@ describe("using-robot-md skill", () => {
   });
 
   it("says which gates refuse motion, in the gateway's scope names", () => {
-    expect(skill).toContain("A gate on a scope that covers motion");
+    // robot-md 2.0.1 (robot-md#121): a gate needs a person unless it says
+    // `require_auth: false`, and such a gate refuses every motion, whatever
+    // scope it names, except `commission`.
+    expect(skill).toContain("unless it says `require_auth: false`");
     expect(skill).toContain("`destructive` and `system`");
+    expect(skill).toContain("The one exception is a gate on `commission`");
+    expect(skill).not.toContain("A gate on a scope that covers motion");
     expect(skill).toContain("read the telemetry's `reached`");
+  });
+
+  it("matches robot-md 2.0.1's stop, clear and credential behavior", () => {
+    expect(skill).toContain("it refuses and sends nothing anyway");
+    expect(skill).toContain("`stop_not_confirmed`");
+    expect(skill).toContain("keeps refusing motion after any `estop` until it restarts");
+    // install-gateway keeps bearers.yaml 0600 for the gateway's user, so the
+    // MCP server can't read it; the person supplies the token.
+    expect(skill).not.toContain("the actuate-tier entry of `/etc/robot-md-gateway/bearers.yaml`");
+    expect(skill).toContain("`ROBOT_MD_GATEWAY_BEARER`");
+    expect(skill).toContain("don't print the environment");
+  });
+
+  it("names the robot-md floor the launcher enforces", () => {
+    expect(skill).toContain("'robot-md>=2.0.1'");
+    expect(skill).not.toContain("'robot-md>=2.0.0'");
   });
 });
 
@@ -175,6 +196,6 @@ describe("plugin manifest", () => {
     ) as { description: string };
     expect(plugin.description).toContain("robot-md-gateway");
     expect(plugin.description).not.toContain("all in one server");
-    expect(plugin.description).toContain("robot-md 2.0.0 or newer");
+    expect(plugin.description).toContain("robot-md 2.0.1 or newer");
   });
 });
