@@ -263,10 +263,21 @@ export function createServer(manifestPath: string): ServerHandle {
     (p) => p.body,
   );
 
+  // All three tools only read the manifest loaded from disk and return text: no
+  // writes, no network, no motion. Motion is not served here at all (see the
+  // instructions); it goes through robot-md-gateway.
+  const READ_ONLY = {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  } as const;
+
   server.registerTool(
     "validate",
     {
       title: "Validate ROBOT.md",
+      annotations: { ...READ_ONLY, title: "Validate ROBOT.md" },
       description: `Validate the served ROBOT.md against the v1 JSON schema and body requirements. Returns { ok: boolean, errors: [...] }. Run this after any edit to the manifest, or when the operator asks "did I break it", "is the manifest still valid", "why won't it load". Safe to run repeatedly — read-only.`,
       inputSchema: {},
     },
@@ -282,6 +293,7 @@ export function createServer(manifestPath: string): ServerHandle {
     "render",
     {
       title: "Render frontmatter as YAML",
+      annotations: { ...READ_ONLY, title: "Render frontmatter as YAML" },
       description: `Strip the prose body and emit the frontmatter as canonical YAML. Use when the operator asks "dump the YAML", "give me just the config", "I need the frontmatter to pipe into another tool". The output matches what \`robot-md render ROBOT.md\` produces from the shell.`,
       inputSchema: {},
     },
@@ -297,6 +309,7 @@ export function createServer(manifestPath: string): ServerHandle {
     "doctor_summary",
     {
       title: "Quick-check the robot (manifest-only)",
+      annotations: { ...READ_ONLY, title: "Quick-check the robot (manifest-only)" },
       description: `Read-only, manifest-only sanity check. Returns a JSON object with schema status, identity fields, driver summary, HITL gates, E-stop config, and registration status. This is cheaper + safer than the full \`robot-md doctor\` CLI (which also probes network + drivers). Use when the operator asks "is everything OK", "quick-check", "what's the state of the manifest". For live hardware diagnostics, tell the operator to run \`robot-md doctor\` from the shell.`,
       inputSchema: {},
     },
