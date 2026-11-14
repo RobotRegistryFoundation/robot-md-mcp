@@ -181,6 +181,9 @@ describe("using-robot-md skill", () => {
     expect(skill).not.toContain("the actuate-tier entry of `/etc/robot-md-gateway/bearers.yaml`");
     expect(skill).toContain("`ROBOT_MD_GATEWAY_BEARER`");
     expect(skill).toContain("don't print the environment");
+    // A redirect in front of the gateway must never become a new target.
+    expect(skill).toContain("`gateway_redirect`");
+    expect(skill).toContain("never point this server at the redirect's target");
   });
 
   it("names the robot-md floor the launcher enforces", () => {
