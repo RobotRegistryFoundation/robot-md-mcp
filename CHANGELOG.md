@@ -6,6 +6,14 @@ All notable changes to `robot-md-mcp` are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **Tool annotations.** `validate`, `render` and `doctor_summary` now say they
+  are read-only, not destructive, idempotent and closed-world, so clients that
+  only read tools marked read-only (such as Microduck Studio's MCP client) can
+  use them. A new test pins all four hints for every tool and fails for a tool
+  that has none.
+
 ### Fixed — the plugin no longer describes a server it isn't running
 
 - **The launcher refuses robot-md older than 2.0.1.** `scripts/start-mcp-server.py`
