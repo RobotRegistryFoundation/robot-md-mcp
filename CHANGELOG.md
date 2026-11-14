@@ -6,6 +6,56 @@ All notable changes to `robot-md-mcp` are documented here.
 
 ## [Unreleased]
 
+### Fixed — the plugin no longer describes a server it isn't running
+
+- **The launcher refuses robot-md older than 2.0.1.** `scripts/start-mcp-server.py`
+  now reads `robot-md --version` and exits 1, with the upgrade line, unless it
+  finds 2.0.1 or newer. In robot-md 1.10.6 and older, the MCP server's
+  `execute_capability` and `execute_task` move the arm from inside the server
+  process, behind a gate that accepts any non-empty token. robot-md 2.0.0 sends
+  motion through robot-md-gateway (RobotRegistryFoundation/robot-md#114), but
+  matches a gate only against a capability's family or name, so the so-arm101
+  preset's `destructive` and `system` gates refuse nothing and a gated motion
+  runs. The plugin's description and the skill below say motion goes only
+  through the gateway and that gated motion is refused, which holds from the
+  release that carries RobotRegistryFoundation/robot-md#121, expected as 2.0.1.
+  Until it is on PyPI, the plugin's MCP server doesn't start. The launcher
+  reads only the whole first line of `robot-md --version`, so other text can't
+  pass an older release, and it refuses a pre-release or dev build of 2.0.1, a
+  `--version` that fails or hangs, and output it can't read, each with its own
+  message. Plugin manifest 0.6.0.
+- **The `using-robot-md` skill** fixes three problems the
+  RobotRegistryFoundation/robot-md-mcp#16 review found after it merged:
+  - It told Claude to run `robot-md doctor --path ROBOT.md`, which opens the servo
+    port; it now says `--hardware off`. It said `robot-md init` touches no
+    actuator, but `init` opens every serial port to look for servos; the person
+    runs it now.
+  - It promised that gated motion is refused, but described a match that misses
+    the so-arm101 preset's `destructive` and `system` gates. It now gives
+    robot-md 2.0.1's rule: a gate needs a person unless it says
+    `require_auth: false`, and such a gate refuses every motion, dry runs
+    included, whatever scope it names, except `commission`. On a manifest made
+    from that preset every motion is refused for now.
+  - It described the bounded-embodiment skill as limited to test runs. That
+    skill forbids motion tools on real hardware in every session, so with both
+    installed Claude calls no motion tool; the pick-place trial says the person
+    runs the steps in that case.
+
+  It also tells Claude never to send to `/v1/invoke` itself, to read the
+  telemetry's `reached` rather than trust `status: ok`, to hand
+  `robot-md pose teach` to the person, and how clearing a stop works after a
+  gateway trip. It matches the rest of robot-md 2.0.1: `estop_clear` refuses
+  and sends nothing; the server refuses motion after any `estop` until the
+  person reconnects it; `stop_not_confirmed` and `gateway_unknown_outcome`
+  mean what they say; `robot-md init` opens the camera as well as the serial
+  ports. The MCP server can't read `/etc/robot-md-gateway/bearers.yaml`, which
+  `install-gateway` keeps 0600 for the gateway's user (robot-md#113), so the
+  skill tells the person to start Claude Code with `ROBOT_MD_GATEWAY_BEARER`
+  or `ROBOT_MD_BEARERS_FILE` set, and tells Claude not to print the
+  environment. README examples 1 and 2 match: on the so-arm101 preset, Claude
+  moves nothing through the MCP server yet. robot-md's bundled copy must match
+  this file (robot-md's `skill-sync-check`).
+
 ### Changed — what this package tells Claude about motion
 
 - **Plugin manifest 0.5.3.** Its description now says motion goes only

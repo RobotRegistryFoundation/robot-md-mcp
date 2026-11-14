@@ -140,8 +140,55 @@ describe("using-robot-md skill", () => {
 
   it("states how it relates to the bounded-embodiment skill", () => {
     expect(skill).toContain("### How this skill relates to the bounded-embodiment skill");
-    expect(skill).toContain("They differ in one place, for a reason");
-    expect(skill).toContain("the stricter rule wins");
+    // bounded-embodiment forbids motion tools on real hardware in every
+    // session, not only in test runs; the skill must not say otherwise.
+    expect(skill).toContain("Its motion rule is stricter than this one");
+    expect(skill).toContain("you call no motion tool on real hardware");
+    expect(skill).toContain("follow the stricter rule");
+    expect(skill).not.toContain("They differ in one place, for a reason");
+  });
+
+  it("never tells Claude to run a command that opens the servo port", () => {
+    expect(skill).toContain("robot-md doctor --path ROBOT.md --hardware off");
+    expect(skill).not.toContain("Don't add `--hardware`: that opens the servo port");
+    expect(skill).not.toContain("Steps 1, 2 and 4 touch no actuator");
+    expect(skill).toContain("Give the person `robot-md init");
+    expect(skill).toContain("`robot-md pose teach`");
+    // Every doctor command keeps --hardware off, so no default can open the port.
+    for (const line of skill.split("\n").filter((l) => /robot-md doctor\b/.test(l))) {
+      expect(line).toContain("--hardware off");
+    }
+    expect(skill).not.toContain("Talk to the gateway at `127.0.0.1:8080`");
+  });
+
+  it("says which gates refuse motion, in the gateway's scope names", () => {
+    // robot-md 2.0.1 (robot-md#121): a gate needs a person unless it says
+    // `require_auth: false`, and such a gate refuses every motion, whatever
+    // scope it names, except `commission`.
+    expect(skill).toContain("unless it says `require_auth: false`");
+    expect(skill).toContain("`destructive` and `system`");
+    expect(skill).toContain("The one exception is a gate on `commission`");
+    expect(skill).not.toContain("A gate on a scope that covers motion");
+    expect(skill).toContain("read the telemetry's `reached`");
+  });
+
+  it("matches robot-md 2.0.1's stop, clear and credential behavior", () => {
+    expect(skill).toContain("it refuses and sends nothing anyway");
+    expect(skill).toContain("`stop_not_confirmed`");
+    expect(skill).toContain("keeps refusing motion after any `estop` until it restarts");
+    // install-gateway keeps bearers.yaml 0600 for the gateway's user, so the
+    // MCP server can't read it; the person supplies the token.
+    expect(skill).not.toContain("the actuate-tier entry of `/etc/robot-md-gateway/bearers.yaml`");
+    expect(skill).toContain("`ROBOT_MD_GATEWAY_BEARER`");
+    expect(skill).toContain("don't print the environment");
+    // A redirect in front of the gateway must never become a new target.
+    expect(skill).toContain("`gateway_redirect`");
+    expect(skill).toContain("never point this server at the redirect's target");
+  });
+
+  it("names the robot-md floor the launcher enforces", () => {
+    expect(skill).toContain("'robot-md>=2.0.1'");
+    expect(skill).not.toContain("'robot-md>=2.0.0'");
   });
 });
 
@@ -152,5 +199,6 @@ describe("plugin manifest", () => {
     ) as { description: string };
     expect(plugin.description).toContain("robot-md-gateway");
     expect(plugin.description).not.toContain("all in one server");
+    expect(plugin.description).toContain("robot-md 2.0.1 or newer");
   });
 });

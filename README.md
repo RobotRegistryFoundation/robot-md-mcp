@@ -47,7 +47,7 @@ Real operator workflows the plugin was designed for. Each example is a single Cl
 A maker just assembled their first robot arm and wants Claude to move it, with the robot's limits enforced by something other than Claude.
 
 ```
-$ pip install robot-md && robot-md init my-arm --preset so-arm101 \
+$ pip install 'robot-md>=2.0.1' && robot-md init my-arm --preset so-arm101 \
     --manufacturer "Home Lab" --contact-email me@example.com
 $ robot-md install-gateway     # the bounded layer every motion goes through
 $ cd my-arm && claude
@@ -61,13 +61,9 @@ Inside Claude Code:
 >
 > **Operator:** move the arm to its ready pose
 >
-> **Claude:** *(reads `/safety` first)* That's `arm.reach`. It goes to robot-md-gateway, which checks it against the arm's limits and paces it. Before I send it: are you at the arm, watching it, with nobody else in reach and a hand on the power switch or plug?
->
-> **Operator:** yes, hand on the plug
->
-> **Claude:** *(calls `execute_capability`, which sends `arm.reach` to the gateway)* The gateway ran it: executed, 2.7 s, the arm is at the ready pose.
+> **Claude:** *(reads `/safety` first)* That's `arm.reach`, and I can't send it. Your manifest gates the `destructive` and `system` scopes with `require_auth: true`, which covers every motion. That needs a person's confirmation from outside this conversation, and robot-md has no way to take one yet, so the robot-md MCP server refuses motion while those gates stand. You can run the move yourself at the arm. I can still answer from the manifest and read the robot's state.
 
-**What the plugin does here:** the `using-robot-md` skill blocks answering from general robotics priors (the operator's declared 0.5 kg payload overrides Claude's training-data assumptions), checks that a person is at the machine with a hardware stop before any motion, and sends motion only through robot-md-gateway, which decides. The operator's "yes" confirms they are at the machine; it is not what allows the motion. Had the gateway refused, Claude would report the refusal as given and stop.
+**What the plugin does here:** the `using-robot-md` skill blocks answering from general robotics priors (the operator's declared 0.5 kg payload overrides Claude's training-data assumptions), and it sends motion only through robot-md-gateway, which decides. The so-arm101 preset gates motion with `require_auth: true`, so until robot-md can take a confirmation from outside the chat, Claude moves nothing on a manifest made from it. On a manifest whose gates don't cover motion, Claude first checks that a person is at the machine with a hardware stop in reach, then sends each step to the gateway and reports its answer, including whether the arm reached the target.
 
 ### Example 2 — Safety review before a sensitive action
 
@@ -75,7 +71,7 @@ A clinical-lab operator is about to ask Claude to manipulate a glass vial. They 
 
 > **Operator:** /check-safety action="pick up the glass vial near the centrifuge"
 >
-> **Claude:** *(invokes the `check-safety` MCP prompt, which cross-references declared `hitl_gates[]`)* ⚠ **Gated — `destructive`.** Your manifest gates the `destructive` scope with `require_auth: true`, and picking up glass falls under it. That needs a person's confirmation from outside this conversation, which robot-md does not have yet, so the robot-md MCP server will refuse `arm.pick` here.
+> **Claude:** *(invokes the `check-safety` MCP prompt, which cross-references declared `hitl_gates[]`)* ⚠ **Gated — `destructive`.** Your manifest gates the `destructive` scope with `require_auth: true`, and picking up glass falls under it. That needs a person's confirmation from outside this conversation, which robot-md does not have yet, so the robot-md MCP server refuses `arm.pick` here, and every other motion while that gate stands.
 >
 > **Operator:** yes, I authorize the pick — the vial is capped and empty
 >
@@ -156,8 +152,9 @@ The same `--scope` flag works on `/plugin marketplace add`. Match the scopes: if
 ### Phase 2 — Set up a robot project (per project)
 
 ```bash
-# If you don't have one yet, create a ROBOT.md:
-pip install robot-md
+# If you don't have one yet, create a ROBOT.md. The plugin's MCP server needs robot-md
+# 2.0.1 or newer; if pip finds no 2.0.1, it isn't released yet.
+pip install 'robot-md>=2.0.1'
 robot-md init my-robot --preset so-arm101 --manufacturer Acme --contact-email you@example.com
 
 # Then launch Claude Code from the project root:
